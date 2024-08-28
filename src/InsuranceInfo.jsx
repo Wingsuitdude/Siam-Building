@@ -25,7 +25,7 @@ const InsuranceInfo = ({ isPremium, onPremiumUpdate }) => {
         </div>
       ) : (
         <div>
-          <p>Basic insurance information goes here...</p>
+          <p>Unlock options on insurance plans for life</p>
           <div className="mt-4">
             <h3 className="text-xl font-bold mb-2">Upgrade to Premium</h3>
             <p className="mb-4">Upgrade to premium for $5 to access exclusive insurance options!</p>
