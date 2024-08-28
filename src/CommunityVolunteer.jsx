@@ -1,35 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
+import { toast } from 'react-toastify';
+import { Users, Calendar, MapPin, UserPlus } from 'lucide-react';
 
 const CommunityVolunteer = () => {
   const [events, setEvents] = useState([]);
-  const [newEvent, setNewEvent] = useState({ title: '', description: '', date: '', location: '' });
-  const [profile, setProfile] = useState(null);
-  const [connections, setConnections] = useState([]);
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [newEvent, setNewEvent] = useState({ title: '', date: '', location: '' });
+  const [volunteerProfile, setVolunteerProfile] = useState(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [username, setUsername] = useState('');
 
   useEffect(() => {
     fetchEvents();
-    fetchProfile();
-    fetchConnections();
+    fetchVolunteerProfile();
   }, []);
 
   const fetchEvents = async () => {
     const { data, error } = await supabase
       .from('community_events')
       .select('*')
-      .order('event_date', { ascending: true });
+      .order('date', { ascending: true });
 
     if (error) {
-      console.error('Error fetching events:', error);
+      toast.error('Failed to fetch events');
     } else {
       setEvents(data);
     }
   };
 
-  const fetchProfile = async () => {
+  const fetchVolunteerProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { data, error } = await supabase
@@ -39,236 +38,209 @@ const CommunityVolunteer = () => {
         .single();
 
       if (error) {
-        console.error('Error fetching profile:', error);
-      } else {
-        setProfile(data);
+        toast.error('Failed to fetch volunteer profile');
+      } else if (data) {
+        setVolunteerProfile(data);
+        setUsername(data.username || '');
       }
     }
   };
 
-  const fetchConnections = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data, error } = await supabase
-        .from('community_connections')
-        .select('connected_user_id')
-        .eq('user_id', user.id);
-
-      if (error) {
-        console.error('Error fetching connections:', error);
-      } else {
-        const connectedUserIds = data.map(conn => conn.connected_user_id);
-        const { data: connectedProfiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('*')
-          .in('id', connectedUserIds);
-
-        if (profilesError) {
-          console.error('Error fetching connected profiles:', profilesError);
-        } else {
-          setConnections(connectedProfiles);
-        }
-      }
-    }
+  const handleInputChange = (e) => {
+    setNewEvent({ ...newEvent, [e.target.name]: e.target.value });
   };
 
-  const handleCreateEvent = async (e) => {
+  const handleProfileChange = (e) => {
+    setVolunteerProfile({ ...volunteerProfile, [e.target.name]: e.target.value });
+  };
+
+  const handleUsernameChange = (e) => {
+    setUsername(e.target.value);
+  };
+
+  const handleSubmitEvent = async (e) => {
     e.preventDefault();
     const { data, error } = await supabase
       .from('community_events')
       .insert([newEvent]);
 
     if (error) {
-      console.error('Error creating event:', error);
+      toast.error('Failed to create event');
     } else {
-      setNewEvent({ title: '', description: '', date: '', location: '' });
+      toast.success('Event created successfully');
+      setNewEvent({ title: '', date: '', location: '' });
       fetchEvents();
     }
   };
 
-  const handleUpdateProfile = async (e) => {
+  const handleSubmitProfile = async (e) => {
     e.preventDefault();
-    const { data, error } = await supabase
-      .from('profiles')
-      .update({
-        is_volunteer: profile.is_volunteer,
-        volunteer_type: profile.volunteer_type,
-        receive_beacons: profile.receive_beacons
-      })
-      .eq('id', profile.id);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({ 
+          id: user.id,
+          username: username,
+          volunteer_type: volunteerProfile.volunteer_type,
+          skills: volunteerProfile.skills,
+          availability: volunteerProfile.availability
+        });
 
-    if (error) {
-      console.error('Error updating profile:', error);
-    } else {
-      console.log('Profile updated successfully');
-    }
-  };
-
-  const handleConnect = async (userId) => {
-    const { data, error } = await supabase
-      .from('community_connections')
-      .insert([{ user_id: profile.id, connected_user_id: userId }]);
-
-    if (error) {
-      console.error('Error connecting:', error);
-    } else {
-      fetchConnections();
-    }
-  };
-
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!selectedUser) return;
-
-    const { data, error } = await supabase
-      .from('messages')
-      .insert([{ sender_id: profile.id, receiver_id: selectedUser.id, content: newMessage }]);
-
-    if (error) {
-      console.error('Error sending message:', error);
-    } else {
-      setNewMessage('');
-      fetchMessages(selectedUser.id);
-    }
-  };
-
-  const fetchMessages = async (userId) => {
-    const { data, error } = await supabase
-      .from('messages')
-      .select('*')
-      .or(`sender_id.eq.${profile.id},receiver_id.eq.${profile.id}`)
-      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
-      .order('sent_at', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching messages:', error);
-    } else {
-      setMessages(data);
+      if (error) {
+        toast.error('Failed to update profile');
+      } else {
+        toast.success('Profile updated successfully');
+        setIsEditingProfile(false);
+        fetchVolunteerProfile();
+      }
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Community Volunteer</h2>
-      
-      {profile && (
-        <form onSubmit={handleUpdateProfile} className="mb-8">
-          <h3 className="text-xl font-bold mb-2">Your Profile</h3>
-          <label className="block mb-2">
-            <input
-              type="checkbox"
-              checked={profile.is_volunteer}
-              onChange={(e) => setProfile({...profile, is_volunteer: e.target.checked})}
-            /> I am a volunteer
-          </label>
-          {profile.is_volunteer && (
-            <input
-              type="text"
-              placeholder="Volunteer Type"
-              value={profile.volunteer_type || ''}
-              onChange={(e) => setProfile({...profile, volunteer_type: e.target.value})}
-              className="w-full p-2 mb-2 border rounded"
-            />
-          )}
-          <label className="block mb-2">
-            <input
-              type="checkbox"
-              checked={profile.receive_beacons}
-              onChange={(e) => setProfile({...profile, receive_beacons: e.target.checked})}
-            /> Receive Beacons
-          </label>
-          <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">Update Profile</button>
-        </form>
-      )}
-
-      <h3 className="text-xl font-bold mb-2">Create Event</h3>
-      <form onSubmit={handleCreateEvent} className="mb-8">
-        <input
-          type="text"
-          placeholder="Event Title"
-          value={newEvent.title}
-          onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-          className="w-full p-2 mb-2 border rounded"
-          required
-        />
-        <textarea
-          placeholder="Event Description"
-          value={newEvent.description}
-          onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-          className="w-full p-2 mb-2 border rounded"
-          required
-        />
-        <input
-          type="date"
-          value={newEvent.date}
-          onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-          className="w-full p-2 mb-2 border rounded"
-          required
-        />
-        <input
-          type="text"
-          placeholder="Event Location"
-          value={newEvent.location}
-          onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-          className="w-full p-2 mb-2 border rounded"
-          required
-        />
-        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">Create Event</button>
-      </form>
-
-      <h3 className="text-xl font-bold mb-2">Upcoming Events</h3>
-      <div className="space-y-4 mb-8">
-        {events.map((event) => (
-          <div key={event.id} className="border p-4 rounded">
-            <h4 className="font-bold">{event.title}</h4>
-            <p>{event.description}</p>
-            <p className="text-sm text-gray-500">
-              {new Date(event.event_date).toLocaleDateString()} at {event.location}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      <h3 className="text-xl font-bold mb-2">Your Connections</h3>
-      <div className="space-y-4 mb-8">
-        {connections.map((conn) => (
-          <div key={conn.id} className="border p-4 rounded flex justify-between items-center">
-            <span>{conn.full_name || conn.username}</span>
-            <button 
-              onClick={() => { setSelectedUser(conn); fetchMessages(conn.id); }}
-              className="bg-green-500 text-white px-4 py-2 rounded"
-            >
-              Message
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {selectedUser && (
-        <div className="mb-8">
-          <h3 className="text-xl font-bold mb-2">Chat with {selectedUser.full_name || selectedUser.username}</h3>
-          <div className="border p-4 rounded h-64 overflow-y-auto mb-4">
-            {messages.map((message) => (
-              <div key={message.id} className={`mb-2 ${message.sender_id === profile.id ? 'text-right' : 'text-left'}`}>
-                <span className="inline-block bg-gray-200 rounded px-2 py-1">
-                  {message.content}
-                </span>
+    <div className="container mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6">Community Volunteer</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-2xl font-semibold mb-4">Volunteer Profile</h2>
+          {volunteerProfile && !isEditingProfile ? (
+            <div>
+              <p><strong>Username:</strong> {username}</p>
+              <p><strong>Type:</strong> {volunteerProfile.volunteer_type}</p>
+              <p><strong>Skills:</strong> {volunteerProfile.skills?.join(', ')}</p>
+              <p><strong>Availability:</strong> {volunteerProfile.availability}</p>
+              <button
+                onClick={() => setIsEditingProfile(true)}
+                className="mt-4 bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
+              >
+                Edit Profile
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmitProfile}>
+              <div className="mb-4">
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700">Username</label>
+                <input
+                  type="text"
+                  id="username"
+                  name="username"
+                  value={username}
+                  onChange={handleUsernameChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-thai-blue focus:ring focus:ring-thai-blue focus:ring-opacity-50"
+                />
               </div>
-            ))}
-          </div>
-          <form onSubmit={handleSendMessage} className="flex">
-            <input
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              className="flex-grow p-2 border rounded-l"
-              placeholder="Type a message..."
-              required
-            />
-            <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded-r">Send</button>
+              <div className="mb-4">
+                <label htmlFor="volunteer_type" className="block text-sm font-medium text-gray-700">Volunteer Type</label>
+                <input
+                  type="text"
+                  id="volunteer_type"
+                  name="volunteer_type"
+                  value={volunteerProfile?.volunteer_type || ''}
+                  onChange={handleProfileChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-thai-blue focus:ring focus:ring-thai-blue focus:ring-opacity-50"
+                />
+              </div>
+              <div className="mb-4">
+                <label htmlFor="skills" className="block text-sm font-medium text-gray-700">Skills (comma-separated)</label>
+                <input
+                  type="text"
+                  id="skills"
+                  name="skills"
+                  value={volunteerProfile?.skills?.join(', ') || ''}
+                  onChange={(e) => handleProfileChange({ target: { name: 'skills', value: e.target.value.split(',').map(skill => skill.trim()) } })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-thai-blue focus:ring focus:ring-thai-blue focus:ring-opacity-50"
+                />
+              </div>
+              <div className="mb-4">
+                <label htmlFor="availability" className="block text-sm font-medium text-gray-700">Availability</label>
+                <input
+                  type="text"
+                  id="availability"
+                  name="availability"
+                  value={volunteerProfile?.availability || ''}
+                  onChange={handleProfileChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-thai-blue focus:ring focus:ring-thai-blue focus:ring-opacity-50"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
+              >
+                Save Profile
+              </button>
+            </form>
+          )}
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-2xl font-semibold mb-4">Create New Event</h2>
+          <form onSubmit={handleSubmitEvent}>
+            <div className="mb-4">
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700">Event Title</label>
+              <input
+                type="text"
+                id="title"
+                name="title"
+                value={newEvent.title}
+                onChange={handleInputChange}
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-thai-blue focus:ring focus:ring-thai-blue focus:ring-opacity-50"
+              />
+            </div>
+            <div className="mb-4">
+              <label htmlFor="date" className="block text-sm font-medium text-gray-700">Date</label>
+              <input
+                type="date"
+                id="date"
+                name="date"
+                value={newEvent.date}
+                onChange={handleInputChange}
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-thai-blue focus:ring focus:ring-thai-blue focus:ring-opacity-50"
+              />
+            </div>
+            <div className="mb-4">
+              <label htmlFor="location" className="block text-sm font-medium text-gray-700">Location</label>
+              <input
+                type="text"
+                id="location"
+                name="location"
+                value={newEvent.location}
+                onChange={handleInputChange}
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-thai-blue focus:ring focus:ring-thai-blue focus:ring-opacity-50"
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
+            >
+              Create Event
+            </button>
           </form>
         </div>
-      )}
+      </div>
+      <div className="mt-8 bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-2xl font-semibold mb-4">Upcoming Events</h2>
+        {events.length > 0 ? (
+          <ul className="space-y-4">
+            {events.map((event) => (
+              <li key={event.id} className="border-b pb-4">
+                <h3 className="text-lg font-semibold">{event.title}</h3>
+                <p className="flex items-center text-gray-600">
+                  <Calendar className="mr-2" size={16} />
+                  {new Date(event.date).toLocaleDateString()}
+                </p>
+                <p className="flex items-center text-gray-600">
+                  <MapPin className="mr-2" size={16} />
+                  {event.location}
+                </p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-gray-600">No upcoming events.</p>
+        )}
+      </div>
     </div>
   );
 };

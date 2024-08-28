@@ -1,47 +1,67 @@
 import React, { useState } from 'react';
 import { supabase } from './supabase';
-import { AlertTriangle } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { AlertTriangle, Phone } from 'lucide-react';
 
-const EmergencyServices = ({ userLocation }) => {
-  const [isEmergency, setIsEmergency] = useState(false);
+const EmergencyServices = () => {
+  const [isAlertSent, setIsAlertSent] = useState(false);
 
-  const handleEmergency = async () => {
-    setIsEmergency(true);
-    if (userLocation) {
-      const { data, error } = await supabase
+  const sendEmergencyAlert = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      // In a real application, you would send this alert to a backend service
+      // Here we're just simulating the alert by inserting a record into a table
+      const { error } = await supabase
         .from('emergency_alerts')
-        .insert([
-          { location: `POINT(${userLocation.lng} ${userLocation.lat})` }
-        ]);
+        .insert({ user_id: user.id });
 
       if (error) {
-        console.error('Error sending emergency alert:', error);
-        alert('Failed to send emergency alert. Please call emergency services directly.');
+        toast.error('Failed to send alert. Please try again or call emergency services directly.');
       } else {
-        alert('Emergency services have been notified of your location.');
+        setIsAlertSent(true);
+        toast.success('Emergency alert sent. Help is on the way!');
       }
-    } else {
-      alert('Unable to determine your location. Please enable location services or call emergency services directly.');
     }
   };
 
   return (
-    <div className="text-center">
-      <h2 className="text-2xl font-bold mb-4">Emergency Services</h2>
-      {!isEmergency ? (
-        <button
-          onClick={handleEmergency}
-          className="bg-red-500 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-full text-xl"
-        >
-          <AlertTriangle className="inline-block mr-2" />
-          Activate Emergency Beacon
-        </button>
-      ) : (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Emergency services notified!</strong>
-          <p className="block sm:inline">Help is on the way. Stay calm and stay where you are if possible.</p>
+    <div className="container mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6">Emergency Services</h1>
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold mb-2">Emergency Contacts</h2>
+          <ul className="space-y-2">
+            <li className="flex items-center">
+              <Phone className="mr-2" size={20} />
+              <span>Police: 191</span>
+            </li>
+            <li className="flex items-center">
+              <Phone className="mr-2" size={20} />
+              <span>Ambulance: 1669</span>
+            </li>
+            <li className="flex items-center">
+              <Phone className="mr-2" size={20} />
+              <span>Fire: 199</span>
+            </li>
+          </ul>
         </div>
-      )}
+        <div>
+          <h2 className="text-2xl font-semibold mb-2">Send Emergency Alert</h2>
+          <p className="mb-4">
+            Press the button below to send an alert to emergency services with your location.
+          </p>
+          <button 
+            onClick={sendEmergencyAlert}
+            disabled={isAlertSent}
+            className={`flex items-center justify-center w-full py-3 px-4 rounded-lg text-white font-bold ${
+              isAlertSent ? 'bg-gray-400' : 'bg-red-600 hover:bg-red-700'
+            } transition duration-300`}
+          >
+            <AlertTriangle className="mr-2" size={24} />
+            {isAlertSent ? 'Alert Sent' : 'Send Emergency Alert'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
