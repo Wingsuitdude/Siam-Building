@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 import { supabase } from './supabase';
 import Navbar from './Navbar';
 import LandingPage from './LandingPage';
-import Login from './Login';
 import Dashboard from './Dashboard';
 import ProfileSettings from './ProfileSettings';
 import Facilities from './Facilities';
@@ -46,13 +45,12 @@ const App = () => {
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={!session ? <LandingPage /> : <Navigate to="/dashboard" />} />
-            <Route path="/login" element={!session ? <Login /> : <Navigate to="/dashboard" />} />
-            <Route path="/dashboard" element={session ? <Dashboard /> : <Navigate to="/login" />} />
-            <Route path="/profile" element={session ? <ProfileSettings /> : <Navigate to="/login" />} />
-            <Route path="/facilities" element={session ? <Facilities /> : <Navigate to="/login" />} />
-            <Route path="/insurance" element={session ? <InsuranceInfo /> : <Navigate to="/login" />} />
-            <Route path="/beacon" element={session ? <EmergencyServices /> : <Navigate to="/login" />} />
-            <Route path="/network" element={session ? <CommunityNetwork /> : <Navigate to="/login" />} />
+            <Route path="/dashboard" element={session ? <Dashboard /> : <Navigate to="/" />} />
+            <Route path="/profile" element={session ? <ProfileSettings /> : <Navigate to="/" />} />
+            <Route path="/facilities" element={session ? <Facilities /> : <Navigate to="/" />} />
+            <Route path="/insurance" element={session ? <InsuranceInfo /> : <Navigate to="/" />} />
+            <Route path="/beacon" element={session ? <EmergencyServices /> : <Navigate to="/" />} />
+            <Route path="/network" element={session ? <CommunityNetwork /> : <Navigate to="/" />} />
           </Routes>
         </main>
         <ToastContainer />
