@@ -69,8 +69,9 @@ const Navbar = () => {
   return (
     <nav className="bg-thai-blue text-white p-4">
       <div className="container mx-auto flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <img src="android-chrome-192x192.png" alt="Thailand Flag" className="w-8 h-8" />
+        {/* Adjusted logo position */}
+        <div className="flex items-center space-x-2 ml-[2cm]">
+          <img src="/Thailandflag.png" alt="Thailand Flag" className="w-8 h-8" />
           <Link to="/dashboard" className="text-2xl font-bold">Siam Care</Link>
         </div>
         <div className="flex justify-center items-center space-x-4">
@@ -79,7 +80,8 @@ const Navbar = () => {
           <NavLink to="/beacon" icon={<AlertTriangle />}>Beacon</NavLink>
           <NavLink to="/network" icon={<Users />}>Network</NavLink>
         </div>
-        <div className="flex items-center space-x-4">
+        {/* Adjusted profile section position */}
+        <div className="flex items-center space-x-4 mr-[2cm]">
           <NavLink to="/dashboard" icon={<User />}>Profile</NavLink>
           <span className="font-bold">{username}</span>
           <span className={`font-bold ${isPremium ? 'text-yellow-400' : 'text-red-500'}`}>
