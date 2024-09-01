@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from './supabase';
-import { MapPin, Shield, AlertTriangle, Users, Home, LogOut } from 'lucide-react';
+import { User, MapPin, Shield, AlertTriangle, Users, LogOut } from 'lucide-react';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -40,11 +40,11 @@ const Navbar = () => {
       <div className="container mx-auto flex justify-between items-center">
         <Link to="/dashboard" className="text-2xl font-bold">Siam Care</Link>
         <div className="flex items-center space-x-4">
-          <NavLink to="/dashboard" icon={<Home size={20} />}>Home</NavLink>
-          <NavLink to="/map" icon={<MapPin size={20} />}>Map & Facilities</NavLink>
-          <NavLink to="/insurance" icon={<Shield size={20} />}>Insurance Plans</NavLink>
-          <NavLink to="/emergency" icon={<AlertTriangle size={20} />}>Emergency Beacon</NavLink>
-          <NavLink to="/community" icon={<Users size={20} />}>Community Support</NavLink>
+          <NavLink to="/profile" icon={<User size={20} />}>Profile</NavLink>
+          <NavLink to="/facilities" icon={<MapPin size={20} />}>Facilities</NavLink>
+          <NavLink to="/insurance" icon={<Shield size={20} />}>Insurance</NavLink>
+          <NavLink to="/beacon" icon={<AlertTriangle size={20} />}>Beacon</NavLink>
+          <NavLink to="/network" icon={<Users size={20} />}>Network</NavLink>
           <span className="font-bold">{username} - {isPremium ? 'Care+' : 'Free'}</span>
           <button onClick={handleLogout} className="flex items-center space-x-1 p-2 rounded hover:bg-red-600 transition duration-300">
             <LogOut size={20} />

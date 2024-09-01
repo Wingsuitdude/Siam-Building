@@ -5,10 +5,11 @@ import Navbar from './Navbar';
 import LandingPage from './LandingPage';
 import Login from './Login';
 import Dashboard from './Dashboard';
-import CustomMap from './CustomMap';
+import ProfileSettings from './ProfileSettings';
+import Facilities from './Facilities';
 import InsuranceInfo from './InsuranceInfo';
 import EmergencyServices from './EmergencyServices';
-import CommunityVolunteer from './CommunityVolunteer';
+import CommunityNetwork from './CommunityNetwork';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -36,10 +37,11 @@ const App = () => {
             <Route path="/" element={!session ? <LandingPage /> : <Navigate to="/dashboard" />} />
             <Route path="/login" element={!session ? <Login /> : <Navigate to="/dashboard" />} />
             <Route path="/dashboard" element={session ? <Dashboard /> : <Navigate to="/login" />} />
-            <Route path="/map" element={session ? <CustomMap /> : <Navigate to="/login" />} />
+            <Route path="/profile" element={session ? <ProfileSettings /> : <Navigate to="/login" />} />
+            <Route path="/facilities" element={session ? <Facilities /> : <Navigate to="/login" />} />
             <Route path="/insurance" element={session ? <InsuranceInfo /> : <Navigate to="/login" />} />
-            <Route path="/emergency" element={session ? <EmergencyServices /> : <Navigate to="/login" />} />
-            <Route path="/community" element={session ? <CommunityVolunteer /> : <Navigate to="/login" />} />
+            <Route path="/beacon" element={session ? <EmergencyServices /> : <Navigate to="/login" />} />
+            <Route path="/network" element={session ? <CommunityNetwork /> : <Navigate to="/login" />} />
           </Routes>
         </main>
         <ToastContainer />
