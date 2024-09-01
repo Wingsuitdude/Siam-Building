@@ -75,23 +75,7 @@ const Dashboard = () => {
         </section>
       )}
 
-      <section className="text-center">
-        <h2 className="text-3xl font-bold text-thai-blue mb-6">Why Choose Siam Care?</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <Testimonial 
-            quote="Siam Care has been a lifesaver during my stay in Thailand. The emergency services feature gave me peace of mind."
-            author="John D., Expat"
-          />
-          <Testimonial 
-            quote="As a frequent traveler, having all my insurance information in one place is incredibly convenient. Care+ is worth every baht!"
-            author="Sarah L., Digital Nomad"
-          />
-          <Testimonial 
-            quote="The community support feature helped me connect with other expats and get valuable healthcare advice. Highly recommended!"
-            author="Michael R., Retiree"
-          />
-        </div>
-      </section>
+      
     </div>
   );
 };
