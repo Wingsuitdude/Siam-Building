@@ -70,7 +70,7 @@ const Navbar = () => {
     <nav className="bg-thai-blue text-white p-4">
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <img src="/android-chrome-192x192.png" alt="Thailand Flag" className="w-8 h-8" />
+          <img src="android-chrome-192x192.png" alt="Thailand Flag" className="w-8 h-8" />
           <Link to="/dashboard" className="text-2xl font-bold">Siam Care</Link>
         </div>
         <div className="flex justify-center items-center space-x-4">

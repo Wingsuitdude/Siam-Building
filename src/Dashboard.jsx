@@ -148,7 +148,7 @@ const DashboardProfile = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 ">
         <div className="w-4/5 mx-auto bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
           <div className="bg-thai-blue text-white py-4 px-6">
             <h2 className="text-3xl font-bold">Profile Settings</h2>
