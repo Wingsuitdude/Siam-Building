@@ -43,8 +43,8 @@ const Dashboard = () => {
         <div className="flex justify-center space-x-4">
           <FeatureHighlight icon={<MapPin />} title="Find Healthcare" />
           <FeatureHighlight icon={<Shield />} title="Purchase Insurance" />
-          <FeatureHighlight icon={<AlertTriangle />} title="Request EMS" />
-          <FeatureHighlight icon={<Users />} title="Responder Community" />
+          <FeatureHighlight icon={<AlertTriangle />} title="Emergency Beacon" />
+          <FeatureHighlight icon={<Users />} title="Volunteer Network" />
         </div>
       </section>
 
@@ -54,10 +54,9 @@ const Dashboard = () => {
             <h2 className="text-4xl font-bold text-white mb-6 animate-pulse">Upgrade to Care+</h2>
             <p className="text-white text-xl mb-8">Experience premium healthcare services and keep Thailand - The Land of Smile.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <PremiumFeature icon={<AlertTriangle />} text="Priority Emergency Beacons" />
-              <PremiumFeature icon={<MapPin />} text="Detailed Facility Information" />
-              <PremiumFeature icon={<Shield />} text="Enhanced Insurance Coverage" />
-              <PremiumFeature icon={<Star />} text="Exclusive Health Tips and Resources" />
+              <PremiumFeature icon={<AlertTriangle />} text="Send Emergency Beacons" />
+              <PremiumFeature icon={<MapPin />} text="Detailed Facility Finder" />
+              <PremiumFeature icon={<Star />} text="Network of Community Volunteers" />
             </div>
             <div className="mt-8 flex justify-center">
               <stripe-buy-button
@@ -94,11 +93,5 @@ const PremiumFeature = ({ icon, text }) => (
   </div>
 );
 
-const Testimonial = ({ quote, author }) => (
-  <div className="bg-white p-6 rounded-lg shadow-md">
-    <p className="italic text-gray-600 mb-4">"{quote}"</p>
-    <p className="font-semibold text-thai-blue">- {author}</p>
-  </div>
-);
 
 export default Dashboard;
