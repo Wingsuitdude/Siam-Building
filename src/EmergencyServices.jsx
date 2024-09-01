@@ -162,105 +162,123 @@ const EmergencyServices = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6 text-thai-blue">Emergency Services</h1>
+    <div className="container mx-auto px-4 py-8 max-w-3xl">
+      <h1 className="text-3xl font-bold mb-6 text-thai-blue text-center">Emergency Services</h1>
       
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h2 className="text-2xl font-semibold mb-4 text-thai-blue">Emergency Beacon</h2>
-        <button 
-          onClick={() => {
-            console.log("Button clicked");
-            toggleBeacon();
-          }}
-          className={`w-20% py-3 px-4 rounded-lg text-white font-bold mb-4 transition duration-300 ${
-            isBeaconActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
-          }`}
-        >
-          {isBeaconActive ? 'Deactivate Beacon' : 'Activate Beacon'}
-        </button>
-        
-        {isBeaconActive && (
-          <div className="space-y-4">
-            <textarea
-              value={emergencyDetails}
-              onChange={(e) => setEmergencyDetails(e.target.value)}
-              placeholder="Describe your emergency..."
-              className="w-20% p-2 border rounded-md focus:ring-2 focus:ring-thai-blue focus:border-transparent"
-              rows="3"
-            />
-            <select
-              value={stressLevel}
-              onChange={(e) => setStressLevel(e.target.value)}
-              className="w-20% p-2 border rounded-md focus:ring-2 focus:ring-thai-blue focus:border-transparent"
-            >
-              <option value="small-boo-boo">Small Boo-boo</option>
-              <option value="concerning">Concerning</option>
-              <option value="serious">Serious</option>
-              <option value="critical">Critical - Need immediate help</option>
-            </select>
-            <button
-              onClick={updateEmergencyInfo}
-              className="w-20% bg-thai-blue text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300"
-            >
-              Update Emergency Info
-            </button>
-          </div>
-        )}
+      <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
+        <div className="bg-thai-blue text-white py-4 px-6">
+          <h2 className="text-2xl font-bold text-center">Emergency Beacon</h2>
+        </div>
+        <div className="p-6">
+          <button 
+            onClick={() => {
+              console.log("Button clicked");
+              toggleBeacon();
+            }}
+            className={`w-full py-3 px-4 rounded-lg text-white font-bold mb-4 transition duration-300 ${
+              isBeaconActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
+            }`}
+          >
+            {isBeaconActive ? 'Deactivate Beacon' : 'Activate Beacon'}
+          </button>
+          
+          {isBeaconActive && (
+            <div className="space-y-4">
+              <textarea
+                value={emergencyDetails}
+                onChange={(e) => setEmergencyDetails(e.target.value)}
+                placeholder="Describe your emergency..."
+                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-thai-blue focus:border-transparent"
+                rows="3"
+              />
+              <select
+                value={stressLevel}
+                onChange={(e) => setStressLevel(e.target.value)}
+                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-thai-blue focus:border-transparent"
+              >
+                <option value="small-boo-boo">Small Boo-boo</option>
+                <option value="concerning">Concerning</option>
+                <option value="serious">Serious</option>
+                <option value="critical">Critical - Need immediate help</option>
+              </select>
+              <button
+                onClick={updateEmergencyInfo}
+                className="w-full bg-thai-blue text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300"
+              >
+                Update Emergency Info
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h2 className="text-2xl font-semibold mb-4 text-thai-blue">Active Emergency Beacons</h2>
-        {activeBeacons.length > 0 ? (
-          <ul className="space-y-4">
-            {activeBeacons.map((beacon) => (
-              <li key={beacon.id} className="border-b pb-4">
-                <h3 className="font-semibold text-lg">{beacon.profiles.username}'s Emergency</h3>
-                <p className="text-gray-600">Stress Level: {beacon.stress_level}</p>
-                <p className="text-gray-600">Details: {beacon.details}</p>
-                <button
-                  onClick={() => setSelectedBeacon(beacon)}
-                  className="mt-2 bg-thai-blue text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300"
-                >
-                  Respond
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-600">No active emergency beacons.</p>
-        )}
+      <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
+        <div className="bg-thai-blue text-white py-4 px-6">
+          <h2 className="text-2xl font-bold text-center">Active Emergency Beacons</h2>
+        </div>
+        <div className="p-6">
+          {activeBeacons.length > 0 ? (
+            <ul className="space-y-4">
+              {activeBeacons.map((beacon) => (
+                <li key={beacon.id} className="border-b pb-4">
+                  <h3 className="font-semibold text-lg text-center">{beacon.profiles.username}'s Emergency</h3>
+                  <p className="text-gray-600 text-center">Stress Level: {beacon.stress_level}</p>
+                  <p className="text-gray-600 text-center">Details: {beacon.details}</p>
+                  <div className="text-center mt-2">
+                    <button
+                      onClick={() => setSelectedBeacon(beacon)}
+                      className="bg-thai-blue text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300"
+                    >
+                      Respond
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-600 text-center">No active emergency beacons.</p>
+          )}
+        </div>
       </div>
 
       {selectedBeacon && (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-2xl font-semibold mb-4 text-thai-blue">Emergency Location</h2>
-          <div className="h-96 w-full">
-            <MapContainer center={parseLocation(selectedBeacon.location)} zoom={13} className="h-full w-full">
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              <Marker position={parseLocation(selectedBeacon.location)}>
-                <Popup>{selectedBeacon.profiles.username}'s location</Popup>
-              </Marker>
-            </MapContainer>
+        <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
+          <div className="bg-thai-blue text-white py-4 px-6">
+            <h2 className="text-2xl font-bold text-center">Emergency Location</h2>
+          </div>
+          <div className="p-6">
+            <div className="h-96 w-full">
+              <MapContainer center={parseLocation(selectedBeacon.location)} zoom={13} className="h-full w-full">
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <Marker position={parseLocation(selectedBeacon.location)}>
+                  <Popup>{selectedBeacon.profiles.username}'s location</Popup>
+                </Marker>
+              </MapContainer>
+            </div>
           </div>
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-semibold mb-4 text-thai-blue">Emergency Contacts</h2>
-        <ul className="space-y-2">
-          <li className="flex items-center">
-            <Phone className="mr-2 text-thai-blue" size={20} />
-            <span>Police: 191</span>
-          </li>
-          <li className="flex items-center">
-            <Phone className="mr-2 text-thai-blue" size={20} />
-            <span>Ambulance: 1669</span>
-          </li>
-          <li className="flex items-center">
-            <Phone className="mr-2 text-thai-blue" size={20} />
-            <span>Fire: 199</span>
-          </li>
-        </ul>
+      <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+        <div className="bg-thai-blue text-white py-4 px-6">
+          <h2 className="text-2xl font-bold text-center">Emergency Contacts</h2>
+        </div>
+        <div className="p-6">
+          <ul className="space-y-2">
+            <li className="flex items-center justify-center">
+              <Phone className="mr-2 text-thai-blue" size={20} />
+              <span>Police: 191</span>
+            </li>
+            <li className="flex items-center justify-center">
+              <Phone className="mr-2 text-thai-blue" size={20} />
+              <span>Ambulance: 1669</span>
+            </li>
+            <li className="flex items-center justify-center">
+              <Phone className="mr-2 text-thai-blue" size={20} />
+              <span>Fire: 199</span>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   );

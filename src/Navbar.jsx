@@ -68,20 +68,19 @@ const Navbar = () => {
 
   return (
     <nav className="bg-thai-blue text-white p-4">
-      <div className="container mx-auto flex items-center">
-        <div className="flex items-center">
-          <Link to="/dashboard" className="text-2xl font-bold flex-shrink-0">Siam Care</Link>
-          {/* Add the elephant image here */}
-          <img src="/ele.png" alt="Siam Care Logo" className="ml-2 w-10 h-10 object-cover rounded-full" />
+      <div className="container mx-auto flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <img src="/android-chrome-192x192.png" alt="Thailand Flag" className="w-8 h-8" />
+          <Link to="/dashboard" className="text-2xl font-bold">Siam Care</Link>
         </div>
-        <div className="flex-grow flex justify-center items-center space-x-4">
-          <NavLink to="/dashboard" icon={<User />}>Profile</NavLink>
+        <div className="flex justify-center items-center space-x-4">
           <NavLink to="/facilities" icon={<MapPin />}>Facilities</NavLink>
           <NavLink to="/insurance" icon={<Shield />}>Insurance</NavLink>
           <NavLink to="/beacon" icon={<AlertTriangle />}>Beacon</NavLink>
           <NavLink to="/network" icon={<Users />}>Network</NavLink>
         </div>
-        <div className="flex items-center space-x-4 flex-shrink-0">
+        <div className="flex items-center space-x-4">
+          <NavLink to="/dashboard" icon={<User />}>Profile</NavLink>
           <span className="font-bold">{username}</span>
           <span className={`font-bold ${isPremium ? 'text-yellow-400' : 'text-red-500'}`}>
             {isPremium ? 'CARE+' : 'FREE'}

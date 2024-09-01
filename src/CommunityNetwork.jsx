@@ -4,7 +4,6 @@ import { toast } from 'react-toastify';
 import { Users, Calendar, MapPin, UserPlus, Award, MessageSquare, UserCheck, Mail, X } from 'lucide-react';
 
 const CommunityNetwork = () => {
-  const [userProfile, setUserProfile] = useState(null);
   const [nearbyUsers, setNearbyUsers] = useState([]);
   const [topMedics, setTopMedics] = useState([]);
   const [discussions, setDiscussions] = useState([]);
@@ -13,32 +12,15 @@ const CommunityNetwork = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
+  const [communityEvents, setCommunityEvents] = useState([]);
 
   useEffect(() => {
-    fetchUserProfile();
     fetchNearbyUsers();
     fetchTopMedics();
     fetchDiscussions();
     fetchConnections();
+    fetchCommunityEvents();
   }, []);
-
-  const fetchUserProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching user profile:', error);
-        toast.error('Failed to fetch user profile');
-      } else {
-        setUserProfile(data);
-      }
-    }
-  };
 
   const fetchNearbyUsers = async () => {
     const { data, error } = await supabase
@@ -106,6 +88,16 @@ const CommunityNetwork = () => {
         setConnections(data);
       }
     }
+  };
+
+  const fetchCommunityEvents = async () => {
+    // This is a placeholder function. In a real application, you would fetch events from your database.
+    const mockEvents = [
+      { id: 1, title: 'Community Health Fair', date: '2023-07-15', location: 'Central Park' },
+      { id: 2, title: 'Medical Volunteer Meetup', date: '2023-07-22', location: 'City Hall' },
+      { id: 3, title: 'First Aid Training Workshop', date: '2023-08-05', location: 'Community Center' },
+    ];
+    setCommunityEvents(mockEvents);
   };
 
   const handleInputChange = (e) => {
@@ -193,150 +185,173 @@ const CommunityNetwork = () => {
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6 text-thai-blue">Community Network</h1>
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <h1 className="text-3xl font-bold mb-6 text-thai-blue text-center">Community Network</h1>
       
-      {userProfile && (
-        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-          <div className="flex items-center space-x-4">
-            {userProfile.profile_picture ? (
-              <img src={userProfile.profile_picture} alt="Profile" className="w-20 h-20 rounded-full" />
-            ) : (
-              <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center">
-                <Users size={40} className="text-gray-500" />
-              </div>
-            )}
-            <div>
-              <h2 className="text-2xl font-semibold text-thai-blue">{userProfile.username}</h2>
-              <p className="text-gray-600">{userProfile.bio || 'No bio available'}</p>
+      <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
+        <div className="bg-thai-blue text-white py-4 px-6">
+          <h2 className="text-2xl font-bold text-center">Your Medical Network</h2>
+        </div>
+        <div className="p-6">
+          {connections.length > 0 ? (
+            <ul className="space-y-2">
+              {connections.map((connection) => (
+                <li key={connection.id} className="flex items-center justify-between">
+                  <span className="flex items-center">
+                    <UserCheck className="mr-2 text-thai-blue" size={16} />
+                    {connection.profiles.username || 'Anonymous User'}
+                  </span>
+                  <button
+                    onClick={() => handleMessage(connection.connected_user_id)}
+                    className="text-thai-blue hover:text-blue-700"
+                  >
+                    <Mail size={20} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-600">You haven't connected with anyone yet.</p>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-8 mb-8">
+        <div className="w-full md:w-1/2">
+          <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue h-full">
+            <div className="bg-thai-blue text-white py-4 px-6">
+              <h2 className="text-2xl font-bold text-center">Nearby Users</h2>
+            </div>
+            <div className="p-6">
+              {nearbyUsers.length > 0 ? (
+                <ul className="space-y-2">
+                  {nearbyUsers.map((user) => (
+                    <li key={user.id} className="flex items-center justify-between">
+                      <span className="flex items-center">
+                        <UserPlus className="mr-2 text-thai-blue" size={16} />
+                        {user.username || 'Anonymous User'}
+                      </span>
+                      <div>
+                        <button
+                          onClick={() => handleConnect(user.id)}
+                          className="mr-2 text-thai-blue hover:text-blue-700"
+                        >
+                          <UserCheck size={20} />
+                        </button>
+                        <button
+                          onClick={() => handleMessage(user.id)}
+                          className="text-thai-blue hover:text-blue-700"
+                        >
+                          <Mail size={20} />
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-600">No nearby users found.</p>
+              )}
             </div>
           </div>
         </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-2xl font-semibold mb-4 text-thai-blue">Nearby Users</h2>
-          {nearbyUsers.length > 0 ? (
-            <ul className="space-y-2">
-              {nearbyUsers.map((user) => (
-                <li key={user.id} className="flex items-center justify-between">
-                  <span className="flex items-center">
-                    <UserPlus className="mr-2 text-thai-blue" size={16} />
-                    {user.username || 'Anonymous User'}
-                  </span>
-                  <div>
-                    <button
-                      onClick={() => handleConnect(user.id)}
-                      className="mr-2 text-thai-blue hover:text-blue-700"
-                    >
-                      <UserCheck size={20} />
-                    </button>
-                    <button
-                      onClick={() => handleMessage(user.id)}
-                      className="text-thai-blue hover:text-blue-700"
-                    >
-                      <Mail size={20} />
-                    </button>
+        
+        <div className="w-full md:w-1/2">
+          <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue h-full">
+            <div className="bg-thai-blue text-white py-4 px-6">
+              <h2 className="text-2xl font-bold text-center">Top Care+ Medics</h2>
+            </div>
+            <div className="p-6">
+              {topMedics.length > 0 ? (
+                <ul className="space-y-2">
+                  {topMedics.map((medic) => (
+                    <li key={medic.id} className="flex items-center justify-between">
+                      <span className="flex items-center">
+                        <Award className="mr-2 text-yellow-500" size={16} />
+                        {medic.username || 'Anonymous Medic'}
+                      </span>
+                      <span className="text-gray-600">Responses: {medic.response_count || 0}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-600">No top medics found.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
+        <div className="bg-thai-blue text-white py-4 px-6">
+          <h2 className="text-2xl font-bold text-center">Global Discussion Board</h2>
+        </div>
+        <div className="p-6">
+          <form onSubmit={handleSubmitDiscussion} className="mb-6">
+            <input
+              type="text"
+              name="title"
+              value={newDiscussion.title}
+              onChange={handleInputChange}
+              placeholder="Discussion Title"
+              className="w-full p-2 mb-2 border rounded"
+              required
+            />
+            <textarea
+              name="content"
+              value={newDiscussion.content}
+              onChange={handleInputChange}
+              placeholder="Share your experience or start a discussion..."
+              className="w-full p-2 mb-2 border rounded"
+              rows="4"
+              required
+            />
+            <button
+              type="submit"
+              className="bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
+            >
+              Post Discussion
+            </button>
+          </form>
+          
+          <h3 className="text-xl font-semibold mb-4 text-thai-blue">Recent Discussions</h3>
+          {discussions.length > 0 ? (
+            <ul className="space-y-4">
+              {discussions.map((discussion) => (
+                <li key={discussion.id} className="border-b pb-4">
+                  <h4 className="text-lg font-semibold">{discussion.title}</h4>
+                  <p className="text-gray-600 mb-2">{discussion.content}</p>
+                  <div className="flex items-center text-sm text-gray-500">
+                    <MessageSquare className="mr-1" size={14} />
+                    <span>{discussion.profiles.username} - {new Date(discussion.created_at).toLocaleString()}</span>
                   </div>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-gray-600">No nearby users found.</p>
-          )}
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-2xl font-semibold mb-4 text-thai-blue">Top Care+ Medics</h2>
-          {topMedics.length > 0 ? (
-            <ul className="space-y-2">
-              {topMedics.map((medic) => (
-                <li key={medic.id} className="flex items-center justify-between">
-                  <span className="flex items-center">
-                    <Award className="mr-2 text-yellow-500" size={16} />
-                    {medic.username || 'Anonymous Medic'}
-                  </span>
-                  <span className="text-gray-600">Responses: {medic.response_count || 0}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-600">No top medics found.</p>
+            <p className="text-gray-600">No discussions yet. Be the first to start one!</p>
           )}
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h2 className="text-2xl font-semibold mb-4 text-thai-blue">Your Medical Network</h2>
-        {connections.length > 0 ? (
-          <ul className="space-y-2">
-            {connections.map((connection) => (
-              <li key={connection.id} className="flex items-center justify-between">
-                <span className="flex items-center">
-                  <UserCheck className="mr-2 text-thai-blue" size={16} />
-                  {connection.profiles.username || 'Anonymous User'}
-                </span>
-                <button
-                  onClick={() => handleMessage(connection.connected_user_id)}
-                  className="text-thai-blue hover:text-blue-700"
-                >
-                  <Mail size={20} />
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-600">You haven't connected with anyone yet.</p>
-        )}
-      </div>
-      
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h2 className="text-2xl font-semibold mb-4 text-thai-blue">Global Discussion Board</h2>
-        <form onSubmit={handleSubmitDiscussion} className="mb-6">
-          <input
-            type="text"
-            name="title"
-            value={newDiscussion.title}
-            onChange={handleInputChange}
-            placeholder="Discussion Title"
-            className="w-full p-2 mb-2 border rounded"
-            required
-          />
-          <textarea
-            name="content"
-            value={newDiscussion.content}
-            onChange={handleInputChange}
-            placeholder="Share your experience or start a discussion..."
-            className="w-full p-2 mb-2 border rounded"
-            rows="4"
-            required
-          />
-          <button
-            type="submit"
-            className="bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
-          >
-            Post Discussion
-          </button>
-        </form>
-        
-        <h3 className="text-xl font-semibold mb-4 text-thai-blue">Recent Discussions</h3>
-        {discussions.length > 0 ? (
-          <ul className="space-y-4">
-            {discussions.map((discussion) => (
-              <li key={discussion.id} className="border-b pb-4">
-                <h4 className="text-lg font-semibold">{discussion.title}</h4>
-                <p className="text-gray-600 mb-2">{discussion.content}</p>
-                <div className="flex items-center text-sm text-gray-500">
-                  <MessageSquare className="mr-1" size={14} />
-                  <span>{discussion.profiles.username} - {new Date(discussion.created_at).toLocaleString()}</span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-600">No discussions yet. Be the first to start one!</p>
-        )}
+      <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
+        <div className="bg-thai-blue text-white py-4 px-6">
+          <h2 className="text-2xl font-bold text-center">Community Events</h2>
+        </div>
+        <div className="p-6">
+          {communityEvents.length > 0 ? (
+            <ul className="space-y-4">
+              {communityEvents.map((event) => (
+                <li key={event.id} className="border-b pb-4">
+                  <h4 className="text-lg font-semibold">{event.title}</h4>
+                  <p className="text-gray-600">Date: {event.date}</p>
+                  <p className="text-gray-600">Location: {event.location}</p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-600">No upcoming events at the moment.</p>
+          )}
+        </div>
       </div>
 
       {selectedUser && (
@@ -347,8 +362,8 @@ const CommunityNetwork = () => {
               <div className="mt-2 px-7 py-3">
                 <div className="max-h-60 overflow-y-auto mb-4">
                   {messages.map((message) => (
-                    <div key={message.id} className={`mb-2 ${message.sender_id === userProfile.id ? 'text-right' : 'text-left'}`}>
-                      <span className={`inline-block p-2 rounded-lg ${message.sender_id === userProfile.id ? 'bg-thai-blue text-white' : 'bg-gray-200'}`}>
+                    <div key={message.id} className={`mb-2 ${message.sender_id === selectedUser ? 'text-right' : 'text-left'}`}>
+                      <span className={`inline-block p-2 rounded-lg ${message.sender_id === selectedUser ? 'bg-thai-blue text-white' : 'bg-gray-200'}`}>
                         {message.content}
                       </span>
                     </div>

@@ -70,7 +70,7 @@ const Facilities = () => {
   const FilterButton = ({ type, label }) => (
     <button
       onClick={() => handleTypeToggle(type)}
-      className={`px-3 py-1 rounded-full text-sm font-medium mb-2 w-full ${
+      className={`px-3 py-2 rounded-full text-sm font-medium mb-2 w-full ${
         selectedTypes[type] 
           ? 'bg-thai-blue text-white' 
           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -81,49 +81,67 @@ const Facilities = () => {
   );
 
   return (
-    <div className="container mx-auto p-4 flex">
-      <div className="w-1/4 pr-4">
-        <h1 className="text-2xl font-bold mb-4">Healthcare Facilities</h1>
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold mb-2">General</h2>
-          <FilterButton type="clinics" label="Clinics" />
-          <FilterButton type="pharmacies" label="Pharmacies" />
-          <FilterButton type="privateHospitals" label="Private Hospitals" />
-          <FilterButton type="publicHospitals" label="Public Hospitals" />
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <h1 className="text-3xl font-bold mb-6 text-thai-blue text-center">Healthcare Facilities</h1>
+      
+      <div className="flex gap-8">
+        <div className="w-1/3">
+          <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+            <div className="bg-thai-blue text-white py-4 px-6">
+              <h2 className="text-2xl font-bold text-center">Facility Types</h2>
+            </div>
+            <div className="p-6">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold mb-2 text-center">General</h3>
+                <FilterButton type="clinics" label="Clinics" />
+                <FilterButton type="pharmacies" label="Pharmacies" />
+                <FilterButton type="privateHospitals" label="Private Hospitals" />
+                <FilterButton type="publicHospitals" label="Public Hospitals" />
+              </div>
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold mb-2 text-center">Specialists</h3>
+                <FilterButton type="dentists" label="Dentists" />
+                <FilterButton type="cosmeticCenters" label="Cosmetic Centers" />
+                <FilterButton type="optometrists" label="Optometrists" />
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold mb-2">Specialists</h2>
-          <FilterButton type="dentists" label="Dentists" />
-          <FilterButton type="cosmeticCenters" label="Cosmetic Centers" />
-          <FilterButton type="optometrists" label="Optometrists" />
-        </div>
-      </div>
-      <div className="w-3/4">
-        <div className="aspect-square rounded-lg overflow-hidden shadow-lg">
-          <MapContainer center={userLocation} zoom={13} style={{ height: '70%', width: '100%' }}>
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            />
-            {facilities.map((facility) => (
-              <Marker key={facility.id} position={[facility.lat, facility.lng]}>
-                <Popup>
-                  {isPremium ? (
-                    <div>
-                      <h3 className="font-bold">{facility.name}</h3>
-                      <p>{facility.address}</p>
-                      <p>Phone: {facility.phone}</p>
-                    </div>
-                  ) : (
-                    <div>
-                      <h3 className="font-bold">{facility.name}</h3>
-                      <p>Upgrade to Care+ to see contact details</p>
-                    </div>
-                  )}
-                </Popup>
-              </Marker>
-            ))}
-          </MapContainer>
+
+        <div className="w-2/3">
+          <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue h-full">
+            <div className="bg-thai-blue text-white py-4 px-6">
+              <h2 className="text-2xl font-bold text-center">Facility Map</h2>
+            </div>
+            <div className="p-6">
+              <div className="rounded-lg overflow-hidden shadow-lg" style={{ height: 'calc(100vh - 300px)', minHeight: '400px' }}>
+                <MapContainer center={userLocation} zoom={13} style={{ height: '100%', width: '100%' }}>
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  />
+                  {facilities.map((facility) => (
+                    <Marker key={facility.id} position={[facility.lat, facility.lng]}>
+                      <Popup>
+                        {isPremium ? (
+                          <div>
+                            <h3 className="font-bold">{facility.name}</h3>
+                            <p>{facility.address}</p>
+                            <p>Phone: {facility.phone}</p>
+                          </div>
+                        ) : (
+                          <div>
+                            <h3 className="font-bold">{facility.name}</h3>
+                            <p>Upgrade to Care+ to see contact details</p>
+                          </div>
+                        )}
+                      </Popup>
+                    </Marker>
+                  ))}
+                </MapContainer>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
