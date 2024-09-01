@@ -69,7 +69,11 @@ const Navbar = () => {
   return (
     <nav className="bg-thai-blue text-white p-4">
       <div className="container mx-auto flex items-center">
-        <Link to="/dashboard" className="text-2xl font-bold flex-shrink-0">Siam Care</Link>
+        <div className="flex items-center">
+          <Link to="/dashboard" className="text-2xl font-bold flex-shrink-0">Siam Care</Link>
+          {/* Add the elephant image here */}
+          <img src="/ele.png" alt="Siam Care Logo" className="ml-2 w-10 h-10 object-cover rounded-full" />
+        </div>
         <div className="flex-grow flex justify-center items-center space-x-4">
           <NavLink to="/dashboard" icon={<User />}>Profile</NavLink>
           <NavLink to="/facilities" icon={<MapPin />}>Facilities</NavLink>

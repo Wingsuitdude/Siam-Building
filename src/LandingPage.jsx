@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { AlertTriangle, MapPin, Shield, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import logo from '../public/ele.png';
 
 const LandingPage = () => {
   const [email, setEmail] = useState('');
@@ -65,6 +66,7 @@ const LandingPage = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         className="container mx-auto text-center"
+        
       >
         <motion.h1
           initial={{ y: -100, opacity: 0 }}
@@ -72,6 +74,10 @@ const LandingPage = () => {
           transition={{ type: "spring", stiffness: 100, delay: 0.2 }}
           className="text-6xl font-bold mb-6"
         >
+ <div className="mb-8">
+          <img src="/ele.png" alt="Siam Care Logo" className="w-48 h-48 object-cover rounded-full mx-auto" />
+        </div>
+        
           Siam Care
         </motion.h1>
         <motion.p
