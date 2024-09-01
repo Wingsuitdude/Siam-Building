@@ -172,7 +172,7 @@ const EmergencyServices = () => {
             console.log("Button clicked");
             toggleBeacon();
           }}
-          className={`w-full py-3 px-4 rounded-lg text-white font-bold mb-4 transition duration-300 ${
+          className={`w-20% py-3 px-4 rounded-lg text-white font-bold mb-4 transition duration-300 ${
             isBeaconActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
           }`}
         >
@@ -185,13 +185,13 @@ const EmergencyServices = () => {
               value={emergencyDetails}
               onChange={(e) => setEmergencyDetails(e.target.value)}
               placeholder="Describe your emergency..."
-              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-thai-blue focus:border-transparent"
+              className="w-20% p-2 border rounded-md focus:ring-2 focus:ring-thai-blue focus:border-transparent"
               rows="3"
             />
             <select
               value={stressLevel}
               onChange={(e) => setStressLevel(e.target.value)}
-              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-thai-blue focus:border-transparent"
+              className="w-20% p-2 border rounded-md focus:ring-2 focus:ring-thai-blue focus:border-transparent"
             >
               <option value="small-boo-boo">Small Boo-boo</option>
               <option value="concerning">Concerning</option>
@@ -200,7 +200,7 @@ const EmergencyServices = () => {
             </select>
             <button
               onClick={updateEmergencyInfo}
-              className="w-full bg-thai-blue text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300"
+              className="w-20% bg-thai-blue text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300"
             >
               Update Emergency Info
             </button>

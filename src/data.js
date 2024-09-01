@@ -369,3 +369,42 @@ export const publicHospitals = [
   { id: 'pubh89', name: 'Chao Phraya Abhaibhubejhr Hospital', lat: 14.0572, lng: 101.3768, address: '32/7 Prachin Anusorn Road, Prachinburi', phone: '+66 37 211 088' },
   { id: 'pubh90', name: 'Sa Kaeo Crown Prince Hospital', lat: 13.8242, lng: 102.0645, address: '283 Suwannason Road, Sa Kaeo', phone: '+66 37 242 018' },
 ];
+
+export const dentists = [
+  { id: 'd1', name: 'Bangkok Smile Dental Clinic', lat: 13.7380, lng: 100.5600, address: '2 Sukhumvit Road, Bangkok', phone: '+66 2 253 2293' },
+  { id: 'd2', name: 'Dental Hospital Thailand', lat: 13.7466, lng: 100.5371, address: '216 Sukhumvit Road, Bangkok', phone: '+66 2 686 2701' },
+  { id: 'd3', name: 'Thantakit International Dental Center', lat: 13.7310, lng: 100.5686, address: '135 Sukhumvit 49, Bangkok', phone: '+66 2 711 8001' },
+  { id: 'd4', name: 'Smile Signature Dental Clinic', lat: 13.7454, lng: 100.5778, address: '672/1 Phaholyothin Road, Bangkok', phone: '+66 2 279 7001' },
+  { id: 'd5', name: 'Bangkok International Dental Center', lat: 13.7437, lng: 100.5513, address: '35 Sukhumvit 3, Bangkok', phone: '+66 2 066 8889' },
+  { id: 'd6', name: 'Phuket Dental Signature', lat: 7.8964, lng: 98.3031, address: '81/9 Chalermprakiat Ror 9 Road, Phuket', phone: '+66 76 384 848' },
+  { id: 'd7', name: 'Smile Signature Dental Clinic Pattaya', lat: 12.9285, lng: 100.8823, address: '408/18 Moo 12, Pattaya', phone: '+66 38 411 600' },
+  { id: 'd8', name: 'Samui Dental Home', lat: 9.5338, lng: 100.0610, address: '161/20 Moo 1, Bophut, Koh Samui', phone: '+66 77 430 576' },
+  { id: 'd9', name: 'Dental 4 You Clinic Chiang Mai', lat: 18.7954, lng: 98.9738, address: '11/2 Soi 3 Sirimangkalajarn Road, Chiang Mai', phone: '+66 53 894 144' },
+  { id: 'd10', name: 'Sea Smile Dental Clinic', lat: 7.8914, lng: 98.2967, address: 'Jungceylon Shopping Center, Phuket', phone: '+66 76 366 844' },
+];
+
+export const cosmeticCenters = [
+  { id: 'cc1', name: 'Yanhee International Hospital', lat: 13.7768, lng: 100.4746, address: '454 Charansanitwong Road, Bangkok', phone: '+66 2 879 0300' },
+  { id: 'cc2', name: 'Apex Profound Beauty Clinic', lat: 13.7444, lng: 100.5400, address: 'CentralWorld, Bangkok', phone: '+66 2 646 1001' },
+  { id: 'cc3', name: 'Nirunda International Aesthetic Center', lat: 13.7280, lng: 100.5680, address: 'Sukhumvit 39, Bangkok', phone: '+66 2 662 4500' },
+  { id: 'cc4', name: 'Siam Laser Clinic', lat: 13.7460, lng: 100.5380, address: 'Siam Square One, Bangkok', phone: '+66 2 252 2426' },
+  { id: 'cc5', name: 'Bangkok Plastic Surgery Clinic', lat: 13.7340, lng: 100.5690, address: 'Sukhumvit 49, Bangkok', phone: '+66 2 662 1034' },
+  { id: 'cc6', name: 'Phuket Plastic Surgery Institute', lat: 7.8969, lng: 98.3684, address: '44/1 Chalermprakiat Ror 9 Road, Phuket', phone: '+66 76 510 115' },
+  { id: 'cc7', name: 'LaserMed Clinic Pattaya', lat: 12.9285, lng: 100.8805, address: '221/47-48 Central Pattaya Road, Pattaya', phone: '+66 38 361 155' },
+  { id: 'cc8', name: 'Dr. Pom\'s Clinic Samui', lat: 9.5318, lng: 100.0584, address: '124/139 Moo 3, Chaweng Beach, Koh Samui', phone: '+66 77 414 711' },
+  { id: 'cc9', name: 'Chiang Mai Ram Hospital Cosmetic Center', lat: 18.7962, lng: 98.9718, address: '8 Boonruangrit Road, Chiang Mai', phone: '+66 53 920 300' },
+  { id: 'cc10', name: 'Absolute Beauty Clinic', lat: 13.7456, lng: 100.5340, address: 'MBK Center, Bangkok', phone: '+66 2 620 9001' },
+];
+
+export const optometrists = [
+  { id: 'o1', name: 'Bangkok Hospital Eye Center', lat: 13.7462, lng: 100.5863, address: '2 Soi Soonvijai 7, Bangkok', phone: '+66 2 310 3000' },
+  { id: 'o2', name: 'Rutnin Eye Hospital', lat: 13.7444, lng: 100.5578, address: '80/1 Sukhumvit 21, Bangkok', phone: '+66 2 639 3399' },
+  { id: 'o3', name: 'Better Vision Eye Center', lat: 13.7450, lng: 100.5350, address: 'Siam Paragon, Bangkok', phone: '+66 2 610 8001' },
+  { id: 'o4', name: 'TRSC International LASIK Center', lat: 13.7466, lng: 100.5371, address: '218 Sukhumvit Road, Bangkok', phone: '+66 2 686 2702' },
+  { id: 'o5', name: 'Bumrungrad International Eye Center', lat: 13.7437, lng: 100.5513, address: '33 Sukhumvit 3, Bangkok', phone: '+66 2 066 8890' },
+  { id: 'o6', name: 'Phuket Eye Center', lat: 7.8805, lng: 98.3923, address: '353/1 Yaowarat Road, Phuket', phone: '+66 76 211 115' },
+  { id: 'o7', name: 'Pattaya International Hospital Eye Clinic', lat: 12.9285, lng: 100.8823, address: '408/16 Moo 12, Pattaya', phone: '+66 38 428 375' },
+  { id: 'o8', name: 'Samui International Eye Center', lat: 9.5338, lng: 100.0610, address: '124/144 Moo 3, Chaweng Beach, Koh Samui', phone: '+66 77 230 782' },
+  { id: 'o9', name: 'Chiang Mai Ram Eye Center', lat: 18.7962, lng: 98.9718, address: '8/1 Boonruangrit Road, Chiang Mai', phone: '+66 53 920 300' },
+  { id: 'o10', name: 'Bangkok Eye Hospital', lat: 13.7530, lng: 100.5420, address: 'Emporium Tower, Bangkok', phone: '+66 2 664 2290' },
+];

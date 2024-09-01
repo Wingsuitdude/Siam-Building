@@ -148,152 +148,145 @@ const DashboardProfile = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-5xl font-bold text-thai-blue mb-8">Welcome to Siam Care</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div>
-          <h2 className="text-3xl font-bold mb-6 text-thai-blue">Profile Settings</h2>
-          <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="profile-picture">
-                Profile Picture
-              </label>
-              <div className="flex items-center justify-center w-32 h-32 mb-4 relative">
-                {profile.profile_picture ? (
-                  <img 
-                    src={profile.profile_picture} 
-                    alt="Profile" 
-                    className="w-full h-full object-cover rounded-full"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center">
-                    <User size={40} className="text-gray-500" />
-                  </div>
-                )}
-                <label className="cursor-pointer absolute bottom-0 right-0 bg-thai-blue text-white p-2 rounded-full">
-                  <Camera size={20} />
-                  <input 
-                    type="file" 
-                    className="hidden" 
-                    onChange={handleFileUpload} 
-                    accept="image/*" 
-                    disabled={isLoading}
-                  />
-                </label>
-              </div>
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="username">
-                Username
-              </label>
-              <input
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                id="username"
-                type="text"
-                name="username"
-                value={profile.username || ''}
-                onChange={handleInputChange}
-                placeholder="Username"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="volunteer_type">
-                Volunteer Type
-              </label>
-              <select
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                id="volunteer_type"
-                name="volunteer_type"
-                value={profile.volunteer_type || ''}
-                onChange={handleInputChange}
-              >
-                <option value="">Select Volunteer Type</option>
-                <option value="doctor">Doctor</option>
-                <option value="nurse">Nurse</option>
-                <option value="paramedic">Paramedic</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="phone_number">
-                Phone Number
-              </label>
-              <input
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                id="phone_number"
-                type="tel"
-                name="phone_number"
-                value={profile.phone_number || ''}
-                onChange={handleInputChange}
-                placeholder="Phone Number"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="bio">
-                Bio
-              </label>
-              <textarea
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                id="bio"
-                name="bio"
-                value={profile.bio || ''}
-                onChange={handleInputChange}
-                placeholder="Tell us about yourself..."
-                rows="4"
-              />
-            </div>
-            <div className="mb-6">
-              <button
-                type="button"
-                onClick={setHomeLocation}
-                className="bg-thai-blue hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-              >
-                <MapPin size={20} className="inline mr-2" />
-                Set Current Location as Home
-              </button>
-            </div>
-            <div className="flex items-center justify-between">
-              <button
-                className="bg-thai-blue hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                type="submit"
-                disabled={isLoading}
-              >
-                {isLoading ? 'Updating...' : 'Save Profile'}
-              </button>
-            </div>
-          </form>
-        </div>
-        <div>
-          <h2 className="text-3xl font-bold mb-6 text-thai-blue">Dashboard</h2>
-          <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-            <div className="flex justify-center space-x-4 mb-8">
-              <FeatureHighlight icon={<MapPin />} title="Find Healthcare" />
-              <FeatureHighlight icon={<Shield />} title="Purchase Insurance" />
-              <FeatureHighlight icon={<AlertTriangle />} title="Emergency Beacon" />
-              <FeatureHighlight icon={<Users />} title="Volunteer Network" />
-            </div>
-            {!profile.is_premium ? (
-              <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-2xl overflow-hidden p-6">
-                <h3 className="text-2xl font-bold text-white mb-4 animate-pulse">Upgrade to Care+</h3>
-                <p className="text-white text-lg mb-6">Experience premium healthcare services in Thailand.</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <PremiumFeature icon={<AlertTriangle />} text="Send Emergency Beacons" />
-                  <PremiumFeature icon={<MapPin />} text="Detailed Facility Finder" />
-                  <PremiumFeature icon={<Star />} text="Network of Community Volunteers" />
+        <div className="w-4/5 mx-auto bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+          <div className="bg-thai-blue text-white py-4 px-6">
+            <h2 className="text-3xl font-bold">Profile Settings</h2>
+          </div>
+          <div className="p-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="relative">
+                <div className="flex items-center justify-center w-32 h-32 mx-auto mb-4 relative">
+                  {profile.profile_picture ? (
+                    <img 
+                      src={profile.profile_picture} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover rounded-full border-4 border-thai-blue"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center border-4 border-thai-blue">
+                      <User size={40} className="text-gray-500" />
+                    </div>
+                  )}
+                  <label className="cursor-pointer absolute bottom-0 right-0 bg-thai-blue text-white p-2 rounded-full shadow-lg">
+                    <Camera size={20} />
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      onChange={handleFileUpload} 
+                      accept="image/*" 
+                      disabled={isLoading}
+                    />
+                  </label>
                 </div>
-                <div className="flex justify-center">
-                  <stripe-buy-button
-                    buy-button-id="buy_btn_1PsbXzRxsRHMbmw8BFV1QnsO"
-                    publishable-key="pk_live_51PrZqYRxsRHMbmw8b8YkoACWONSK3BuSTBKtCGgykFE2p957pWdFvJkkMW4DxVoDTTNEoCsn3ifeZ9Zyz4Lbkm2400ElR9TbRR"
+              </div>
+              <div className="space-y-4">
+                <InputField
+                  label="Username"
+                  id="username"
+                  name="username"
+                  value={profile.username || ''}
+                  onChange={handleInputChange}
+                  placeholder="Username"
+                />
+                <div>
+                  <label className="block text-white text-sm font-bold mb-2" htmlFor="volunteer_type">
+                    Volunteer Type
+                  </label>
+                  <select
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    id="volunteer_type"
+                    name="volunteer_type"
+                    value={profile.volunteer_type || ''}
+                    onChange={handleInputChange}
                   >
-                  </stripe-buy-button>
+                    <option value="">Select Volunteer Type</option>
+                    <option value="doctor">Doctor</option>
+                    <option value="nurse">Nurse</option>
+                    <option value="paramedic">Paramedic</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <InputField
+                  label="Phone Number"
+                  id="phone_number"
+                  name="phone_number"
+                  type="tel"
+                  value={profile.phone_number || ''}
+                  onChange={handleInputChange}
+                  placeholder="Phone Number"
+                />
+                <div>
+                  <label className="block text-white text-sm font-bold mb-2" htmlFor="bio">
+                    Bio
+                  </label>
+                  <textarea
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    id="bio"
+                    name="bio"
+                    value={profile.bio || ''}
+                    onChange={handleInputChange}
+                    placeholder="Tell us about yourself..."
+                    rows="4"
+                  />
                 </div>
               </div>
-            ) : (
-              <div className="bg-gradient-to-r from-green-400 to-blue-500 rounded-lg shadow-xl p-6">
-                <h3 className="text-2xl font-bold text-white mb-4">Welcome, Care+ Member!</h3>
-                <p className="text-white text-lg">Enjoy your premium features and enhanced healthcare experience!</p>
+              <div className="flex flex-col space-y-4">
+                <button
+                  type="button"
+                  onClick={setHomeLocation}
+                  className="bg-thai-blue hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline flex items-center justify-center"
+                >
+                  <MapPin size={20} className="mr-2" />
+                  Set Current Location as Home
+                </button>
+                <button
+                  className="bg-thai-blue hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                  type="submit"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Updating...' : 'Save Profile'}
+                </button>
               </div>
-            )}
+            </form>
+          </div>
+        </div>
+        <div className="w-4/5 mx-auto">
+          <h2 className="text-3xl font-bold mb-6 text-thai-blue">Welcome to Siam Care</h2>
+          <div className="bg-white shadow-md rounded-lg overflow-hidden border-4 border-thai-blue">
+            <div className="bg-gradient-to-r from-blue-500 to-thai-blue p-6">
+              <div className="flex justify-around space-x-4 mb-8">
+                <FeatureHighlight icon={<MapPin />} title="Facility Finder" />
+                <FeatureHighlight icon={<Shield />} title="Travel Insurance" />
+                <FeatureHighlight icon={<AlertTriangle />} title="Emergency Beacon" />
+                <FeatureHighlight icon={<Users />} title="Volunteer Network" />
+              </div>
+            </div>
+            <div className="p-6">
+              {!profile.is_premium ? (
+                <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-2xl overflow-hidden p-6">
+                  <h3 className="text-2xl font-bold text-white mb-4 animate-pulse">Upgrade to Care+</h3>
+                  <p className="text-white text-lg mb-6">Experience premium healthcare services in Thailand.</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <PremiumFeature icon={<AlertTriangle />} text="Send Emergency Beacons" />
+                    <PremiumFeature icon={<MapPin />} text="Detailed Facility Finder" />
+                    <PremiumFeature icon={<Star />} text="Network of Community Volunteers" />
+                  </div>
+                  <div className="flex justify-center">
+                    <stripe-buy-button
+                      buy-button-id="buy_btn_1PsbXzRxsRHMbmw8BFV1QnsO"
+                      publishable-key="pk_live_51PrZqYRxsRHMbmw8b8YkoACWONSK3BuSTBKtCGgykFE2p957pWdFvJkkMW4DxVoDTTNEoCsn3ifeZ9Zyz4Lbkm2400ElR9TbRR"
+                    >
+                    </stripe-buy-button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-gradient-to-r from-green-400 to-blue-500 rounded-lg shadow-xl p-6">
+                  <h3 className="text-2xl font-bold text-white mb-4">You are a Care+ Member!</h3>
+                  <p className="text-white text-lg">Enjoy your premium features and welcome to the community!</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -301,10 +294,23 @@ const DashboardProfile = () => {
   );
 };
 
+const InputField = ({ label, id, ...props }) => (
+  <div>
+    <label className="block text-white text-sm font-bold mb-2" htmlFor={id}>
+      {label}
+    </label>
+    <input
+      className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+      id={id}
+      {...props}
+    />
+  </div>
+);
+
 const FeatureHighlight = ({ icon, title }) => (
   <div className="flex flex-col items-center">
-    <div className="text-thai-blue mb-2">{React.cloneElement(icon, { size: 32 })}</div>
-    <h3 className="font-semibold">{title}</h3>
+    <div className="text-white mb-2">{React.cloneElement(icon, { size: 32 })}</div>
+    <h3 className="font-semibold text-white">{title}</h3>
   </div>
 );
 
