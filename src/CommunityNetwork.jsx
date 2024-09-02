@@ -397,7 +397,7 @@ const CommunityNetwork = () => {
         <div className="w-full md:w-1/2">
           <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue h-full">
             <div className="bg-thai-blue text-white py-4 px-6">
-              <h2 className="text-2xl font-bold text-center">Top Care+ Medics</h2>
+              <h2 className="text-2xl font-bold text-center">Top Users</h2>
             </div>
             <div className="p-6">
               {topMedics.length > 0 ? (
@@ -413,7 +413,7 @@ const CommunityNetwork = () => {
                   ))}
                 </ul>
               ) : (
-                <p className="text-gray-600">No top medics found.</p>
+                <p className="text-gray-600">No top users found.</p>
               )}
               </div>
             </div>

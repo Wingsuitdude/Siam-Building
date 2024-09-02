@@ -38,7 +38,7 @@ const Navbar = () => {
   };
 
   const handleRestrictedAccess = (e, path) => {
-    if (!isPremium) {
+    if (!isPremium && ['facilities', 'beacon'].includes(path.slice(1))) {
       e.preventDefault();
       toast.error('This feature is only available for Care+ members. Please upgrade to access.');
     } else {
@@ -47,7 +47,7 @@ const Navbar = () => {
   };
 
   const NavLink = ({ to, icon, children }) => {
-    const isRestricted = ['facilities', 'insurance', 'beacon', 'network'].includes(to.slice(1));
+    const isRestricted = ['facilities', 'beacon'].includes(to.slice(1));
     const linkClass = `flex items-center space-x-1 p-2 rounded transition duration-300 ${
       isRestricted && !isPremium
         ? 'text-red-500 hover:bg-red-100'
