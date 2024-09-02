@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
 import { toast } from 'react-toastify';
-import { Users, Calendar, MapPin, UserPlus, Award, MessageSquare, UserCheck, Mail, X } from 'lucide-react';
+import { Users, Calendar, MapPin, UserPlus, Award, MessageSquare, UserCheck, Mail, X, Trash2 } from 'lucide-react';
 
 const CommunityNetwork = () => {
   const [nearbyUsers, setNearbyUsers] = useState([]);
@@ -9,18 +9,34 @@ const CommunityNetwork = () => {
   const [discussions, setDiscussions] = useState([]);
   const [newDiscussion, setNewDiscussion] = useState({ title: '', content: '' });
   const [connections, setConnections] = useState([]);
+  const [pendingConnections, setPendingConnections] = useState([]);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [communityEvents, setCommunityEvents] = useState([]);
+  const [comments, setComments] = useState({});
+  const [newComment, setNewComment] = useState('');
+  const [selectedDiscussion, setSelectedDiscussion] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
+    fetchCurrentUser();
     fetchNearbyUsers();
     fetchTopMedics();
     fetchDiscussions();
     fetchConnections();
+    fetchPendingConnections();
     fetchCommunityEvents();
   }, []);
+
+  const fetchCurrentUser = async () => {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error) {
+      console.error('Error fetching current user:', error);
+    } else {
+      setCurrentUser(user);
+    }
+  };
 
   const fetchNearbyUsers = async () => {
     const { data, error } = await supabase
@@ -66,6 +82,25 @@ const CommunityNetwork = () => {
       toast.error('Failed to fetch discussions');
     } else {
       setDiscussions(data);
+      data.forEach(discussion => fetchComments(discussion.id));
+    }
+  };
+
+  const fetchComments = async (discussionId) => {
+    const { data, error } = await supabase
+      .from('comments')
+      .select(`
+        *,
+        profiles!user_id (username)
+      `)
+      .eq('discussion_id', discussionId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching comments:', error);
+      toast.error('Failed to fetch comments');
+    } else {
+      setComments(prev => ({ ...prev, [discussionId]: data }));
     }
   };
 
@@ -73,13 +108,7 @@ const CommunityNetwork = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { data, error } = await supabase
-        .from('user_connections')
-        .select(`
-          *,
-          profiles!connected_user_id (*)
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'accepted');
+        .rpc('get_user_connections', { user_id: user.id });
 
       if (error) {
         console.error('Error fetching connections:', error);
@@ -90,14 +119,39 @@ const CommunityNetwork = () => {
     }
   };
 
+  const fetchPendingConnections = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data, error } = await supabase
+        .from('user_connections')
+        .select(`
+          *,
+          profiles!connected_user_id (username)
+        `)
+        .eq('connected_user_id', user.id)
+        .eq('status', 'pending');
+
+      if (error) {
+        console.error('Error fetching pending connections:', error);
+        toast.error('Failed to fetch pending connections');
+      } else {
+        setPendingConnections(data);
+      }
+    }
+  };
+
   const fetchCommunityEvents = async () => {
-    // This is a placeholder function. In a real application, you would fetch events from your database.
-    const mockEvents = [
-      { id: 1, title: 'Community Health Fair', date: '2023-07-15', location: 'Central Park' },
-      { id: 2, title: 'Medical Volunteer Meetup', date: '2023-07-22', location: 'City Hall' },
-      { id: 3, title: 'First Aid Training Workshop', date: '2023-08-05', location: 'Community Center' },
-    ];
-    setCommunityEvents(mockEvents);
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .order('date', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching community events:', error);
+      toast.error('Failed to fetch community events');
+    } else {
+      setCommunityEvents(data);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -123,19 +177,79 @@ const CommunityNetwork = () => {
     }
   };
 
-  const handleConnect = async (userId) => {
+  const handleDeleteDiscussion = async (discussionId) => {
+    const { error } = await supabase
+      .from('discussions')
+      .delete()
+      .eq('id', discussionId);
+
+    if (error) {
+      console.error('Error deleting discussion:', error);
+      toast.error('Failed to delete discussion');
+    } else {
+      toast.success('Discussion deleted successfully');
+      fetchDiscussions();
+    }
+  };
+
+  const handleSubmitComment = async (e, discussionId) => {
+    e.preventDefault();
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { error } = await supabase
-        .from('user_connections')
-        .insert({ user_id: user.id, connected_user_id: userId });
+      const { data, error } = await supabase
+        .from('comments')
+        .insert([{ discussion_id: discussionId, user_id: user.id, content: newComment }]);
 
       if (error) {
-        console.error('Error sending connection request:', error);
-        toast.error('Failed to send connection request');
+        console.error('Error creating comment:', error);
+        toast.error('Failed to create comment');
       } else {
-        toast.success('Connection request sent');
+        toast.success('Comment added successfully');
+        setNewComment('');
+        fetchComments(discussionId);
       }
+    }
+  };
+
+  const handleDeleteComment = async (commentId, discussionId) => {
+    const { error } = await supabase
+      .from('comments')
+      .delete()
+      .eq('id', commentId);
+
+    if (error) {
+      console.error('Error deleting comment:', error);
+      toast.error('Failed to delete comment');
+    } else {
+      toast.success('Comment deleted successfully');
+      fetchComments(discussionId);
+    }
+  };
+
+  const handleConnect = async (userId) => {
+    const { data, error } = await supabase
+      .rpc('send_connection_request', { target_user_id: userId });
+
+    if (error) {
+      console.error('Error sending connection request:', error);
+      toast.error('Failed to send connection request');
+    } else {
+      toast.success('Connection request sent');
+      fetchNearbyUsers();
+    }
+  };
+
+  const handleAcceptConnection = async (userId) => {
+    const { data, error } = await supabase
+      .rpc('accept_connection_request', { requestor_id: userId });
+
+    if (error) {
+      console.error('Error accepting connection request:', error);
+      toast.error('Failed to accept connection request');
+    } else {
+      toast.success('Connection request accepted');
+      fetchPendingConnections();
+      fetchConnections();
     }
   };
 
@@ -162,6 +276,8 @@ const CommunityNetwork = () => {
       }
     }
   };
+
+
 
   const sendMessage = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -193,13 +309,36 @@ const CommunityNetwork = () => {
           <h2 className="text-2xl font-bold text-center">Your Medical Network</h2>
         </div>
         <div className="p-6">
+          {pendingConnections.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-xl font-semibold mb-4 text-thai-blue">Pending Connection Requests</h3>
+              <ul className="space-y-2">
+                {pendingConnections.map((connection) => (
+                  <li key={connection.id} className="flex items-center justify-between">
+                    <span className="flex items-center">
+                      <UserPlus className="mr-2 text-thai-blue" size={16} />
+                      {connection.profiles.username || 'Anonymous User'}
+                    </span>
+                    <button
+                      onClick={() => handleAcceptConnection(connection.user_id)}
+                      className="bg-thai-blue text-white font-bold py-1 px-3 rounded hover:bg-blue-700 transition duration-300"
+                    >
+                      Accept
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          <h3 className="text-xl font-semibold mb-4 text-thai-blue">Your Connections</h3>
           {connections.length > 0 ? (
             <ul className="space-y-2">
               {connections.map((connection) => (
-                <li key={connection.id} className="flex items-center justify-between">
+                <li key={connection.connected_user_id} className="flex items-center justify-between">
                   <span className="flex items-center">
                     <UserCheck className="mr-2 text-thai-blue" size={16} />
-                    {connection.profiles.username || 'Anonymous User'}
+                    {connection.username || 'Anonymous User'}
                   </span>
                   <button
                     onClick={() => handleMessage(connection.connected_user_id)}
@@ -276,127 +415,188 @@ const CommunityNetwork = () => {
               ) : (
                 <p className="text-gray-600">No top medics found.</p>
               )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      
-      <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
-        <div className="bg-thai-blue text-white py-4 px-6">
-          <h2 className="text-2xl font-bold text-center">Global Discussion Board</h2>
-        </div>
-        <div className="p-6">
-          <form onSubmit={handleSubmitDiscussion} className="mb-6">
-            <input
-              type="text"
-              name="title"
-              value={newDiscussion.title}
-              onChange={handleInputChange}
-              placeholder="Discussion Title"
-              className="w-full p-2 mb-2 border rounded"
-              required
-            />
-            <textarea
-              name="content"
-              value={newDiscussion.content}
-              onChange={handleInputChange}
-              placeholder="Share your experience or start a discussion..."
-              className="w-full p-2 mb-2 border rounded"
-              rows="4"
-              required
-            />
-            <button
-              type="submit"
-              className="bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
-            >
-              Post Discussion
-            </button>
-          </form>
-          
-          <h3 className="text-xl font-semibold mb-4 text-thai-blue">Recent Discussions</h3>
-          {discussions.length > 0 ? (
-            <ul className="space-y-4">
-              {discussions.map((discussion) => (
-                <li key={discussion.id} className="border-b pb-4">
-                  <h4 className="text-lg font-semibold">{discussion.title}</h4>
-                  <p className="text-gray-600 mb-2">{discussion.content}</p>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <MessageSquare className="mr-1" size={14} />
-                    <span>{discussion.profiles.username} - {new Date(discussion.created_at).toLocaleString()}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-600">No discussions yet. Be the first to start one!</p>
-          )}
-        </div>
-      </div>
-
-      <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
-        <div className="bg-thai-blue text-white py-4 px-6">
-          <h2 className="text-2xl font-bold text-center">Community Events</h2>
-        </div>
-        <div className="p-6">
-          {communityEvents.length > 0 ? (
-            <ul className="space-y-4">
-              {communityEvents.map((event) => (
-                <li key={event.id} className="border-b pb-4">
-                  <h4 className="text-lg font-semibold">{event.title}</h4>
-                  <p className="text-gray-600">Date: {event.date}</p>
-                  <p className="text-gray-600">Location: {event.location}</p>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-600">No upcoming events at the moment.</p>
-          )}
-        </div>
-      </div>
-
-      {selectedUser && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" id="my-modal">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3 text-center">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Messages</h3>
-              <div className="mt-2 px-7 py-3">
-                <div className="max-h-60 overflow-y-auto mb-4">
-                  {messages.map((message) => (
-                    <div key={message.id} className={`mb-2 ${message.sender_id === selectedUser ? 'text-right' : 'text-left'}`}>
-                      <span className={`inline-block p-2 rounded-lg ${message.sender_id === selectedUser ? 'bg-thai-blue text-white' : 'bg-gray-200'}`}>
-                        {message.content}
-                      </span>
+        
+        <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
+          <div className="bg-thai-blue text-white py-4 px-6">
+            <h2 className="text-2xl font-bold text-center">Global Discussion Board</h2>
+          </div>
+          <div className="p-6">
+            <form onSubmit={handleSubmitDiscussion} className="mb-6">
+              <input
+                type="text"
+                name="title"
+                value={newDiscussion.title}
+                onChange={handleInputChange}
+                placeholder="Discussion Title"
+                className="w-full p-2 mb-2 border rounded"
+                required
+              />
+              <textarea
+                name="content"
+                value={newDiscussion.content}
+                onChange={handleInputChange}
+                placeholder="Share your experience or start a discussion..."
+                className="w-full p-2 mb-2 border rounded"
+                rows="4"
+                required
+              />
+              <button
+                type="submit"
+                className="bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
+              >
+                Post Discussion
+              </button>
+            </form>
+            
+            <h3 className="text-xl font-semibold mb-4 text-thai-blue">Recent Discussions</h3>
+            {discussions.length > 0 ? (
+              <ul className="space-y-4">
+                {discussions.map((discussion) => (
+                  <li key={discussion.id} className="border-b pb-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="text-lg font-semibold">{discussion.title}</h4>
+                        <p className="text-gray-600 mb-2">{discussion.content}</p>
+                        <div className="flex items-center text-sm text-gray-500">
+                          <MessageSquare className="mr-1" size={14} />
+                          <span>{discussion.profiles.username} - {new Date(discussion.created_at).toLocaleString()}</span>
+                        </div>
+                      </div>
+                      {discussion.user_id === currentUser?.id && (
+                        <button
+                          onClick={() => handleDeleteDiscussion(discussion.id)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      )}
                     </div>
-                  ))}
+                    <button
+                      onClick={() => setSelectedDiscussion(selectedDiscussion === discussion.id ? null : discussion.id)}
+                      className="mt-2 text-thai-blue hover:underline"
+                    >
+                      {selectedDiscussion === discussion.id ? 'Hide Comments' : 'Show Comments'}
+                    </button>
+                    {selectedDiscussion === discussion.id && (
+                      <div className="mt-4 pl-4">
+                        <h5 className="font-semibold mb-2">Comments:</h5>
+                        {comments[discussion.id] && comments[discussion.id].length > 0 ? (
+                          <ul className="space-y-2">
+                            {comments[discussion.id].map((comment) => (
+                              <li key={comment.id} className="flex justify-between items-start">
+                                <div>
+                                  <p className="text-sm">{comment.content}</p>
+                                  <span className="text-xs text-gray-500">{comment.profiles.username} - {new Date(comment.created_at).toLocaleString()}</span>
+                                </div>
+                                {comment.user_id === currentUser?.id && (
+                                  <button
+                                    onClick={() => handleDeleteComment(comment.id, discussion.id)}
+                                    className="text-red-500 hover:text-red-700"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-gray-500">No comments yet.</p>
+                        )}
+                        <form onSubmit={(e) => handleSubmitComment(e, discussion.id)} className="mt-2">
+                          <input
+                            type="text"
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            placeholder="Add a comment..."
+                            className="w-full p-2 border rounded"
+                            required
+                          />
+                          <button
+                            type="submit"
+                            className="mt-2 bg-thai-blue text-white font-bold py-1 px-3 rounded hover:bg-blue-700 transition duration-300"
+                          >
+                            Post Comment
+                          </button>
+                        </form>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-600">No discussions yet. Be the first to start one!</p>
+            )}
+          </div>
+        </div>
+  
+        <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
+          <div className="bg-thai-blue text-white py-4 px-6">
+            <h2 className="text-2xl font-bold text-center">Community Events</h2>
+          </div>
+          <div className="p-6">
+            {communityEvents.length > 0 ? (
+              <ul className="space-y-4">
+                {communityEvents.map((event) => (
+                  <li key={event.id} className="border-b pb-4">
+                    <h4 className="text-lg font-semibold">{event.title}</h4>
+                    <p className="text-gray-600">Date: {event.date}</p>
+                    <p className="text-gray-600">Location: {event.location}</p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-600">No upcoming events at the moment.</p>
+            )}
+          </div>
+        </div>
+  
+        {selectedUser && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" id="my-modal">
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+              <div className="mt-3 text-center">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">Messages</h3>
+                <div className="mt-2 px-7 py-3">
+                  <div className="max-h-60 overflow-y-auto mb-4">
+                    {messages.map((message) => (
+                      <div key={message.id} className={`mb-2 ${message.sender_id === selectedUser ? 'text-right' : 'text-left'}`}>
+                        <span className={`inline-block p-2 rounded-lg ${message.sender_id === selectedUser ? 'bg-thai-blue text-white' : 'bg-gray-200'}`}>
+                          {message.content}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Type your message..."
+                    className="w-full p-2 border rounded mb-2"
+                  />
+                  <button
+                    onClick={sendMessage}
+                    className="bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
+                  >
+                    Send
+                  </button>
                 </div>
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type your message..."
-                  className="w-full p-2 border rounded mb-2"
-                />
+              </div>
+              <div className="items-center px-4 py-3">
                 <button
-                  onClick={sendMessage}
-                  className="bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
+                  onClick={() => setSelectedUser(null)}
+                  className="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300"
                 >
-                  Send
+                  Close
                 </button>
               </div>
             </div>
-            <div className="items-center px-4 py-3">
-              <button
-                onClick={() => setSelectedUser(null)}
-                className="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300"
-              >
-                Close
-              </button>
-            </div>
           </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default CommunityNetwork;
+        )}
+      </div>
+    );
+  };
+  
+  export default CommunityNetwork;
