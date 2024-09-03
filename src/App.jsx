@@ -32,7 +32,7 @@ const App = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-100">
+      <div className="flex justify-center items-center min-h-screen bg-white">
         <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-thai-blue"></div>
       </div>
     );
@@ -40,7 +40,7 @@ const App = () => {
 
   return (
     <Router>
-      <div className="flex flex-col min-h-screen bg-gray-100">
+      <div className="flex flex-col min-h-screen bg-gray-400">
         {session && <Navbar session={session} />}
         <main className="flex-grow">
           <Routes>

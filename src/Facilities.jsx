@@ -86,7 +86,7 @@ const Facilities = () => {
       
       <div className="flex gap-8">
         <div className="w-1/3">
-          <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+          <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
             <div className="bg-thai-blue text-white py-4 px-6">
               <h2 className="text-2xl font-bold text-center">Facility Types</h2>
             </div>
@@ -109,7 +109,7 @@ const Facilities = () => {
         </div>
 
         <div className="w-2/3">
-          <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue h-full">
+          <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue h-full">
             <div className="bg-thai-blue text-white py-4 px-6">
               <h2 className="text-2xl font-bold text-center">Facility Map</h2>
             </div>

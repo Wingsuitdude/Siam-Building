@@ -304,19 +304,19 @@ const CommunityNetwork = () => {
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <h1 className="text-3xl font-bold mb-6 text-thai-blue text-center">Community Network</h1>
       
-      <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
+      <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-4">
         <div className="bg-thai-blue text-white py-4 px-6">
           <h2 className="text-2xl font-bold text-center">Your Medical Network</h2>
         </div>
         <div className="p-6">
           {pendingConnections.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-xl font-semibold mb-4 text-thai-blue">Pending Connection Requests</h3>
+              <h3 className="text-xl font-semibold mb-4 text-white">Pending Connection Requests</h3>
               <ul className="space-y-2">
                 {pendingConnections.map((connection) => (
                   <li key={connection.id} className="flex items-center justify-between">
                     <span className="flex items-center">
-                      <UserPlus className="mr-2 text-thai-blue" size={16} />
+                      <UserPlus className="mr-2 text-white" size={16} />
                       {connection.profiles.username || 'Anonymous User'}
                     </span>
                     <button
@@ -331,18 +331,18 @@ const CommunityNetwork = () => {
             </div>
           )}
           
-          <h3 className="text-xl font-semibold mb-4 text-thai-blue">Your Connections</h3>
+          <h3 className="text-xl font-semibold mb-4 text-white">Your Connections</h3>
           {connections.length > 0 ? (
             <ul className="space-y-2">
               {connections.map((connection) => (
                 <li key={connection.connected_user_id} className="flex items-center justify-between">
                   <span className="flex items-center">
-                    <UserCheck className="mr-2 text-thai-blue" size={16} />
+                    <UserCheck className="mr-2 text-white" size={16} />
                     {connection.username || 'Anonymous User'}
                   </span>
                   <button
                     onClick={() => handleMessage(connection.connected_user_id)}
-                    className="text-thai-blue hover:text-blue-700"
+                    className="text-white hover:text-blue-700"
                   >
                     <Mail size={20} />
                   </button>
@@ -350,14 +350,14 @@ const CommunityNetwork = () => {
               ))}
             </ul>
           ) : (
-            <p className="text-gray-600">You haven't connected with anyone yet.</p>
+            <p className="text-white">You haven't connected with anyone yet.</p>
           )}
         </div>
       </div>
 
       <div className="flex flex-col md:flex-row gap-8 mb-8">
         <div className="w-full md:w-1/2">
-          <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue h-full">
+          <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue h-full">
             <div className="bg-thai-blue text-white py-4 px-6">
               <h2 className="text-2xl font-bold text-center">Nearby Users</h2>
             </div>
@@ -367,19 +367,19 @@ const CommunityNetwork = () => {
                   {nearbyUsers.map((user) => (
                     <li key={user.id} className="flex items-center justify-between">
                       <span className="flex items-center">
-                        <UserPlus className="mr-2 text-thai-blue" size={16} />
+                        <UserPlus className="mr-2 text-white" size={16} />
                         {user.username || 'Anonymous User'}
                       </span>
                       <div>
                         <button
                           onClick={() => handleConnect(user.id)}
-                          className="mr-2 text-thai-blue hover:text-blue-700"
+                          className="mr-2 text-white hover:text-blue-700"
                         >
                           <UserCheck size={20} />
                         </button>
                         <button
                           onClick={() => handleMessage(user.id)}
-                          className="text-thai-blue hover:text-blue-700"
+                          className="text-white hover:text-blue-700"
                         >
                           <Mail size={20} />
                         </button>
@@ -395,7 +395,7 @@ const CommunityNetwork = () => {
         </div>
         
         <div className="w-full md:w-1/2">
-          <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue h-full">
+          <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue h-full">
             <div className="bg-thai-blue text-white py-4 px-6">
               <h2 className="text-2xl font-bold text-center">Top Users</h2>
             </div>
@@ -408,19 +408,19 @@ const CommunityNetwork = () => {
                         <Award className="mr-2 text-yellow-500" size={16} />
                         {medic.username || 'Anonymous Medic'}
                       </span>
-                      <span className="text-gray-600">Responses: {medic.response_count || 0}</span>
+                      <span className="text-white">Responses: {medic.response_count || 0}</span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-gray-600">No top users found.</p>
+                <p className="text-white">No top users found.</p>
               )}
               </div>
             </div>
           </div>
         </div>
         
-        <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
+        <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
           <div className="bg-thai-blue text-white py-4 px-6">
             <h2 className="text-2xl font-bold text-center">Global Discussion Board</h2>
           </div>
@@ -452,7 +452,7 @@ const CommunityNetwork = () => {
               </button>
             </form>
             
-            <h3 className="text-xl font-semibold mb-4 text-thai-blue">Recent Discussions</h3>
+            <h3 className="text-xl font-semibold mb-4 text-white">Recent Discussions</h3>
             {discussions.length > 0 ? (
               <ul className="space-y-4">
                 {discussions.map((discussion) => (
@@ -460,8 +460,8 @@ const CommunityNetwork = () => {
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="text-lg font-semibold">{discussion.title}</h4>
-                        <p className="text-gray-600 mb-2">{discussion.content}</p>
-                        <div className="flex items-center text-sm text-gray-500">
+                        <p className="text-white mb-2">{discussion.content}</p>
+                        <div className="flex items-center text-sm text-white">
                           <MessageSquare className="mr-1" size={14} />
                           <span>{discussion.profiles.username} - {new Date(discussion.created_at).toLocaleString()}</span>
                         </div>
@@ -477,7 +477,7 @@ const CommunityNetwork = () => {
                     </div>
                     <button
                       onClick={() => setSelectedDiscussion(selectedDiscussion === discussion.id ? null : discussion.id)}
-                      className="mt-2 text-thai-blue hover:underline"
+                      className="mt-2 text-white hover:underline"
                     >
                       {selectedDiscussion === discussion.id ? 'Hide Comments' : 'Show Comments'}
                     </button>
@@ -490,7 +490,7 @@ const CommunityNetwork = () => {
                               <li key={comment.id} className="flex justify-between items-start">
                                 <div>
                                   <p className="text-sm">{comment.content}</p>
-                                  <span className="text-xs text-gray-500">{comment.profiles.username} - {new Date(comment.created_at).toLocaleString()}</span>
+                                  <span className="text-xs text-white">{comment.profiles.username} - {new Date(comment.created_at).toLocaleString()}</span>
                                 </div>
                                 {comment.user_id === currentUser?.id && (
                                   <button
@@ -504,7 +504,7 @@ const CommunityNetwork = () => {
                             ))}
                           </ul>
                         ) : (
-                          <p className="text-sm text-gray-500">No comments yet.</p>
+                          <p className="text-sm text-white">No comments yet.</p>
                         )}
                         <form onSubmit={(e) => handleSubmitComment(e, discussion.id)} className="mt-2">
                           <input
@@ -528,12 +528,12 @@ const CommunityNetwork = () => {
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-600">No discussions yet. Be the first to start one!</p>
+              <p className="text-white">No discussions yet. Be the first to start one!</p>
             )}
           </div>
         </div>
   
-        <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
+        <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
           <div className="bg-thai-blue text-white py-4 px-6">
             <h2 className="text-2xl font-bold text-center">Community Events</h2>
           </div>
@@ -543,27 +543,27 @@ const CommunityNetwork = () => {
                 {communityEvents.map((event) => (
                   <li key={event.id} className="border-b pb-4">
                     <h4 className="text-lg font-semibold">{event.title}</h4>
-                    <p className="text-gray-600">Date: {event.date}</p>
-                    <p className="text-gray-600">Location: {event.location}</p>
+                    <p className="text-white">Date: {event.date}</p>
+                    <p className="text-white">Location: {event.location}</p>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-600">No upcoming events at the moment.</p>
+              <p className="text-white">No upcoming events at the moment.</p>
             )}
           </div>
         </div>
   
         {selectedUser && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" id="my-modal">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-blue-600">
               <div className="mt-3 text-center">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">Messages</h3>
+                <h3 className="text-lg leading-6 font-medium text-white">Messages</h3>
                 <div className="mt-2 px-7 py-3">
                   <div className="max-h-60 overflow-y-auto mb-4">
                     {messages.map((message) => (
                       <div key={message.id} className={`mb-2 ${message.sender_id === selectedUser ? 'text-right' : 'text-left'}`}>
-                        <span className={`inline-block p-2 rounded-lg ${message.sender_id === selectedUser ? 'bg-thai-blue text-white' : 'bg-gray-200'}`}>
+                        <span className={`inline-block p-2 rounded-lg ${message.sender_id === selectedUser ? 'bg-thai-blue text-white' : 'bg-blue-600'}`}>
                           {message.content}
                         </span>
                       </div>

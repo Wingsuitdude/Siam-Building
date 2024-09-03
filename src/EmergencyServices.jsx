@@ -165,7 +165,7 @@ const EmergencyServices = () => {
     <div className="container mx-auto px-4 py-8 max-w-3xl">
       <h1 className="text-3xl font-bold mb-6 text-thai-blue text-center">Emergency Services</h1>
       
-      <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
+      <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
         <div className="bg-thai-blue text-white py-4 px-6">
           <h2 className="text-2xl font-bold text-center">Emergency Beacon</h2>
         </div>
@@ -212,7 +212,7 @@ const EmergencyServices = () => {
         </div>
       </div>
 
-      <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
+      <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
         <div className="bg-thai-blue text-white py-4 px-6">
           <h2 className="text-2xl font-bold text-center">Active Emergency Beacons</h2>
         </div>
@@ -236,13 +236,13 @@ const EmergencyServices = () => {
               ))}
             </ul>
           ) : (
-            <p className="text-gray-600 text-center">No active emergency beacons.</p>
+            <p className="text-white text-center">No active emergency beacons.</p>
           )}
         </div>
       </div>
 
       {selectedBeacon && (
-        <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
+        <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
           <div className="bg-thai-blue text-white py-4 px-6">
             <h2 className="text-2xl font-bold text-center">Emergency Location</h2>
           </div>
@@ -259,22 +259,22 @@ const EmergencyServices = () => {
         </div>
       )}
 
-      <div className="bg-white shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+      <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
         <div className="bg-thai-blue text-white py-4 px-6">
           <h2 className="text-2xl font-bold text-center">Emergency Contacts</h2>
         </div>
         <div className="p-6">
           <ul className="space-y-2">
             <li className="flex items-center justify-center">
-              <Phone className="mr-2 text-thai-blue" size={20} />
+              <Phone className="mr-2 text-white" size={20} />
               <span>Police: 191</span>
             </li>
             <li className="flex items-center justify-center">
-              <Phone className="mr-2 text-thai-blue" size={20} />
+              <Phone className="mr-2 text-white" size={20} />
               <span>Ambulance: 1669</span>
             </li>
             <li className="flex items-center justify-center">
-              <Phone className="mr-2 text-thai-blue" size={20} />
+              <Phone className="mr-2 text-white" size={20} />
               <span>Fire: 199</span>
             </li>
           </ul>
