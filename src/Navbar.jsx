@@ -38,7 +38,7 @@ const Navbar = () => {
   };
 
   const handleRestrictedAccess = (e, path) => {
-    if (!isPremium && ['facilities', 'beacon'].includes(path.slice(1))) {
+    if (!isPremium && path === '/facilities') {
       e.preventDefault();
       toast.error('This feature is only available for Care+ members. Please upgrade to access.');
     } else {
@@ -47,7 +47,7 @@ const Navbar = () => {
   };
 
   const NavLink = ({ to, icon, children }) => {
-    const isRestricted = ['facilities', 'beacon'].includes(to.slice(1));
+    const isRestricted = to === '/facilities';
     const linkClass = `flex items-center space-x-1 p-2 rounded transition duration-300 ${
       isRestricted && !isPremium
         ? 'text-red-500 hover:bg-red-100'
@@ -69,7 +69,6 @@ const Navbar = () => {
   return (
     <nav className="bg-thai-blue text-white p-4">
       <div className="container mx-auto flex items-center justify-between">
-        {/* Adjusted logo position */}
         <div className="flex items-center space-x-2 ml-[2cm]">
           <img src="/Thailandflag.png" alt="Thailand Flag" className="w-8 h-8" />
           <Link to="/dashboard" className="text-2xl font-bold">Siam Care</Link>
@@ -80,7 +79,6 @@ const Navbar = () => {
           <NavLink to="/beacon" icon={<AlertTriangle />}>Beacon</NavLink>
           <NavLink to="/network" icon={<Users />}>Network</NavLink>
         </div>
-        {/* Adjusted profile section position */}
         <div className="flex items-center space-x-4 mr-[2cm]">
           <NavLink to="/dashboard" icon={<User />}>Profile</NavLink>
           <span className="font-bold">{username}</span>

@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
 import { toast } from 'react-toastify';
-import { Users, Calendar, MapPin, UserPlus, Award, MessageSquare, UserCheck, Mail, X, Trash2 } from 'lucide-react';
+import { Users, Calendar, MapPin, UserPlus, Award, MessageSquare, UserCheck, Mail, X, Trash2, Bold, Italic, Underline } from 'lucide-react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+
 
 const CommunityNetwork = () => {
   const [nearbyUsers, setNearbyUsers] = useState([]);
@@ -14,10 +17,17 @@ const CommunityNetwork = () => {
   const [newMessage, setNewMessage] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [communityEvents, setCommunityEvents] = useState([]);
+  const [newEvent, setNewEvent] = useState({ title: '', date: '', location: '', description: '' });
+  const [attendees, setAttendees] = useState({});
+  const [showAttendees, setShowAttendees] = useState(null);
   const [comments, setComments] = useState({});
   const [newComment, setNewComment] = useState('');
   const [selectedDiscussion, setSelectedDiscussion] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [selectedProfile, setSelectedProfile] = useState(null);
+  const [activeChats, setActiveChats] = useState([]);
+  const [selectedDiscussionDetails, setSelectedDiscussionDetails] = useState(null);
+  const [newDiscussionContent, setNewDiscussionContent] = useState('');
 
   useEffect(() => {
     fetchCurrentUser();
@@ -103,7 +113,103 @@ const CommunityNetwork = () => {
       setComments(prev => ({ ...prev, [discussionId]: data }));
     }
   };
+  const handleCreateEvent = async (e) => {
+    e.preventDefault();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data, error } = await supabase
+        .from('events')
+        .insert({ ...newEvent, creator_id: user.id });
 
+      if (error) {
+        console.error('Error creating event:', error);
+        toast.error('Failed to create event');
+      } else {
+        toast.success('Event created successfully');
+        setNewEvent({ title: '', date: '', location: '', description: '' });
+        fetchCommunityEvents();
+      }
+    }
+  };
+
+  const handleEditEvent = async (eventId, updatedEvent) => {
+    const { error } = await supabase
+      .from('events')
+      .update(updatedEvent)
+      .eq('id', eventId);
+
+    if (error) {
+      console.error('Error updating event:', error);
+      toast.error('Failed to update event');
+    } else {
+      toast.success('Event updated successfully');
+      fetchCommunityEvents();
+    }
+  };
+
+  const handleDeleteEvent = async (eventId) => {
+    const { error } = await supabase
+      .from('events')
+      .delete()
+      .eq('id', eventId);
+
+    if (error) {
+      console.error('Error deleting event:', error);
+      toast.error('Failed to delete event');
+    } else {
+      toast.success('Event deleted successfully');
+      fetchCommunityEvents();
+    }
+  };
+
+  const handleAttendEvent = async (eventId) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data, error } = await supabase
+        .from('event_attendees')
+        .insert({ event_id: eventId, user_id: user.id });
+
+      if (error) {
+        console.error('Error attending event:', error);
+        toast.error('Failed to attend event');
+      } else {
+        toast.success('You are now attending the event');
+        fetchEventAttendees(eventId);
+      }
+    }
+  };
+
+  const handleCancelAttendance = async (eventId) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { error } = await supabase
+        .from('event_attendees')
+        .delete()
+        .eq('event_id', eventId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error canceling attendance:', error);
+        toast.error('Failed to cancel attendance');
+      } else {
+        toast.success('You are no longer attending the event');
+        fetchEventAttendees(eventId);
+      }
+    }
+  };
+
+  const fetchEventAttendees = async (eventId) => {
+    const { data, error } = await supabase
+      .from('event_attendees')
+      .select('profiles(username)')
+      .eq('event_id', eventId);
+
+    if (error) {
+      console.error('Error fetching event attendees:', error);
+    } else {
+      setAttendees({ ...attendees, [eventId]: data.map(a => a.profiles.username) });
+    }
+  };
   const fetchConnections = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
@@ -164,7 +270,7 @@ const CommunityNetwork = () => {
     if (user) {
       const { data, error } = await supabase
         .from('discussions')
-        .insert([{ ...newDiscussion, user_id: user.id }]);
+        .insert([{ ...newDiscussion, user_id: user.id, content: newDiscussionContent }]);
 
       if (error) {
         console.error('Error creating discussion:', error);
@@ -172,6 +278,7 @@ const CommunityNetwork = () => {
       } else {
         toast.success('Discussion created successfully');
         setNewDiscussion({ title: '', content: '' });
+        setNewDiscussionContent('');
         fetchDiscussions();
       }
     }
@@ -253,9 +360,15 @@ const CommunityNetwork = () => {
     }
   };
 
-  const handleMessage = async (userId) => {
-    setSelectedUser(userId);
-    await fetchMessages(userId);
+  const handleOpenChat = (userId, username) => {
+    if (!activeChats.some(chat => chat.userId === userId)) {
+      setActiveChats([...activeChats, { userId, username }]);
+    }
+    fetchMessages(userId);
+  };
+
+  const handleCloseChat = (userId) => {
+    setActiveChats(activeChats.filter(chat => chat.userId !== userId));
   };
 
   const fetchMessages = async (userId) => {
@@ -277,16 +390,14 @@ const CommunityNetwork = () => {
     }
   };
 
-
-
-  const sendMessage = async () => {
+  const sendMessage = async (recipientId) => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (user && selectedUser && newMessage.trim()) {
+    if (user && recipientId && newMessage.trim()) {
       const { error } = await supabase
         .from('messages')
         .insert({
           sender_id: user.id,
-          recipient_id: selectedUser,
+          recipient_id: recipientId,
           content: newMessage.trim()
         });
 
@@ -295,308 +406,384 @@ const CommunityNetwork = () => {
         toast.error('Failed to send message');
       } else {
         setNewMessage('');
-        fetchMessages(selectedUser);
+        fetchMessages(recipientId);
       }
     }
   };
 
+  const handleOpenDiscussion = (discussion) => {
+    setSelectedDiscussionDetails(discussion);
+    fetchComments(discussion.id);
+  };
+
+  const handleCloseDiscussion = () => {
+    setSelectedDiscussionDetails(null);
+  };
+
+  const fetchUserProfile = async (userId) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching user profile:', error);
+      toast.error('Failed to fetch user profile');
+    } else {
+      setSelectedProfile(data);
+    }
+  };
+
+  const handleProfileClick = (userId) => {
+    fetchUserProfile(userId);
+  };
+
+  const handleCloseProfile = () => {
+    setSelectedProfile(null);
+  };
+
+  const MiniProfileCard = ({ profile, onClose }) => (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" onClick={onClose}>
+      <div className="bg-blue-600 p-6 rounded-lg shadow-xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} className="float-right text-white">
+          <X size={24} />
+        </button>
+        <img src={profile.avatar_url || '/default-avatar.png'} alt={profile.username} className="w-24 h-24 rounded-full mx-auto mb-4" />
+        <h3 className="text-xl font-bold text-white text-center mb-2">{profile.username}</h3>
+        <p className="text-white text-center mb-2">{profile.volunteer_type}</p>
+        <p className="text-white text-center mb-4">{profile.bio}</p>
+        <div className="flex justify-center space-x-4">
+          <button onClick={() => handleOpenChat(profile.id, profile.username)} className="bg-thai-blue text-white px-4 py-2 rounded hover:bg-blue-700">
+            Message
+          </button>
+          <button onClick={() => handleConnect(profile.id)} className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+            Add Friend
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const DiscussionPopup = ({ discussion, onClose }) => (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" onClick={onClose}>
+      <div className="relative top-20 mx-auto p-5 border w-4/5 shadow-lg rounded-md bg-blue-600" onClick={e => e.stopPropagation()}>
+        <div className="mt-3 max-h-[70vh] overflow-y-auto">
+          <h3 className="text-lg leading-6 font-medium text-white">{discussion.title}</h3>
+          <div className="mt-2 px-7 py-3">
+            <div className="text-white" dangerouslySetInnerHTML={{ __html: discussion.content }} />
+            <p className="text-sm text-white mt-2">
+              Posted by: {discussion.profiles.username} - {new Date(discussion.created_at).toLocaleString()}
+            </p>
+          </div>
+          <div className="mt-4">
+            <h4 className="text-white font-medium">Comments</h4>
+            {comments[discussion.id] && comments[discussion.id].map(comment => (
+              <div key={comment.id} className="mt-2 text-white">
+                <p>{comment.content}</p>
+                <p className="text-sm">By: {comment.profiles.username} - {new Date(comment.created_at).toLocaleString()}</p>
+              </div>
+            ))}
+          </div>
+          <form onSubmit={(e) => handleSubmitComment(e, discussion.id)} className="mt-4">
+            <input
+              type="text"
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Add a comment..."
+              className="w-full p-2 border rounded text-gray-800"
+              required
+            />
+            <button
+              type="submit"
+              className="mt-2 bg-thai-blue text-white font-bold py-1 px-3 rounded hover:bg-blue-700 transition duration-300"
+            >
+              Post Comment
+            </button>
+          </form>
+        </div>
+        <div className="items-center px-4 py-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
       <h1 className="text-3xl font-bold mb-6 text-thai-blue text-center">Community Network</h1>
       
-      <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-4">
-        <div className="bg-thai-blue text-white py-4 px-6">
-          <h2 className="text-2xl font-bold text-center">Your Medical Network</h2>
-        </div>
-        <div className="p-6">
-          {pendingConnections.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-xl font-semibold mb-4 text-white">Pending Connection Requests</h3>
-              <ul className="space-y-2">
-                {pendingConnections.map((connection) => (
-                  <li key={connection.id} className="flex items-center justify-between">
-                    <span className="flex items-center">
-                      <UserPlus className="mr-2 text-white" size={16} />
-                      {connection.profiles.username || 'Anonymous User'}
-                    </span>
-                    <button
-                      onClick={() => handleAcceptConnection(connection.user_id)}
-                      className="bg-thai-blue text-white font-bold py-1 px-3 rounded hover:bg-blue-700 transition duration-300"
-                    >
-                      Accept
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          
-          <h3 className="text-xl font-semibold mb-4 text-white">Your Connections</h3>
-          {connections.length > 0 ? (
-            <ul className="space-y-2">
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        {/* Your Network */}
+        <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+          <div className="bg-thai-blue text-white py-2 px-4">
+            <h2 className="text-xl font-bold text-center">Your Network</h2>
+          </div>
+          <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
+            <h3 className="text-white font-semibold mb-2">Pending Connections</h3>
+            <ul className="mb-4">
+              {pendingConnections.map((connection) => (
+                <li key={connection.id} className="flex justify-between items-center text-white mb-2">
+                  <button onClick={() => handleProfileClick(connection.user_id)} className="text-left hover:underline">
+                    {connection.profiles.username}
+                  </button>
+                  <button onClick={() => handleAcceptConnection(connection.user_id)} className="bg-green-500 text-white px-2 py-1 rounded">
+                    Accept
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <h3 className="text-white font-semibold mb-2">Your Connections</h3>
+            <ul>
               {connections.map((connection) => (
-                <li key={connection.connected_user_id} className="flex items-center justify-between">
-                  <span className="flex items-center">
-                    <UserCheck className="mr-2 text-white" size={16} />
-                    {connection.username || 'Anonymous User'}
-                  </span>
-                  <button
-                    onClick={() => handleMessage(connection.connected_user_id)}
-                    className="text-white hover:text-blue-700"
-                  >
+                <li key={connection.connected_user_id} className="flex justify-between items-center text-white mb-2">
+                  <button onClick={() => handleProfileClick(connection.connected_user_id)} className="text-left hover:underline">
+                    {connection.username}
+                  </button>
+                  <button onClick={() => handleOpenChat(connection.connected_user_id, connection.username)} className="text-blue-300">
                     <Mail size={20} />
                   </button>
                 </li>
               ))}
             </ul>
-          ) : (
-            <p className="text-white">You haven't connected with anyone yet.</p>
-          )}
+          </div>
+        </div>
+
+      {/* Nearby Users */}
+      <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+        <div className="bg-thai-blue text-white py-2 px-4">
+          <h2 className="text-xl font-bold text-center">Nearby Users</h2>
+        </div>
+        <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
+          <ul>
+            {nearbyUsers.map((user) => (
+              <li key={user.id} className="flex justify-between items-center text-white mb-2">
+                <button onClick={() => handleProfileClick(user.id)} className="text-left hover:underline">
+                  {user.username}
+                </button>
+                <div>
+                  <button onClick={() => handleConnect(user.id)} className="text-blue-300 mr-2">
+                    <UserPlus size={20} />
+                  </button>
+                  <button onClick={() => handleOpenChat(user.id, user.username)} className="text-blue-300">
+                    <Mail size={20} />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-8 mb-8">
-        <div className="w-full md:w-1/2">
-          <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue h-full">
-            <div className="bg-thai-blue text-white py-4 px-6">
-              <h2 className="text-2xl font-bold text-center">Nearby Users</h2>
-            </div>
-            <div className="p-6">
-              {nearbyUsers.length > 0 ? (
-                <ul className="space-y-2">
-                  {nearbyUsers.map((user) => (
-                    <li key={user.id} className="flex items-center justify-between">
-                      <span className="flex items-center">
-                        <UserPlus className="mr-2 text-white" size={16} />
-                        {user.username || 'Anonymous User'}
-                      </span>
-                      <div>
-                        <button
-                          onClick={() => handleConnect(user.id)}
-                          className="mr-2 text-white hover:text-blue-700"
-                        >
-                          <UserCheck size={20} />
-                        </button>
-                        <button
-                          onClick={() => handleMessage(user.id)}
-                          className="text-white hover:text-blue-700"
-                        >
-                          <Mail size={20} />
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-gray-600">No nearby users found.</p>
-              )}
-            </div>
-          </div>
+      {/* Top Medics */}
+      <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+        <div className="bg-thai-blue text-white py-2 px-4">
+          <h2 className="text-xl font-bold text-center">Top Medics</h2>
         </div>
-        
-        <div className="w-full md:w-1/2">
-          <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue h-full">
-            <div className="bg-thai-blue text-white py-4 px-6">
-              <h2 className="text-2xl font-bold text-center">Top Users</h2>
-            </div>
-            <div className="p-6">
-              {topMedics.length > 0 ? (
-                <ul className="space-y-2">
-                  {topMedics.map((medic) => (
-                    <li key={medic.id} className="flex items-center justify-between">
-                      <span className="flex items-center">
-                        <Award className="mr-2 text-yellow-500" size={16} />
-                        {medic.username || 'Anonymous Medic'}
-                      </span>
-                      <span className="text-white">Responses: {medic.response_count || 0}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-white">No top users found.</p>
-              )}
-              </div>
-            </div>
-          </div>
+        <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
+          <ul>
+            {topMedics.map((medic) => (
+              <li key={medic.id} className="flex justify-between items-center text-white mb-2">
+                <button onClick={() => handleProfileClick(medic.id)} className="text-left hover:underline">
+                  {medic.username}
+                </button>
+                <span>Responses: {medic.response_count}</span>
+              </li>
+            ))}
+          </ul>
         </div>
-        
-        <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
-          <div className="bg-thai-blue text-white py-4 px-6">
-            <h2 className="text-2xl font-bold text-center">Global Discussion Board</h2>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-2 gap-4">
+      {/* Global Discussions */}
+      <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+        <div className="bg-thai-blue text-white py-2 px-4">
+          <h2 className="text-xl font-bold text-center">Global Discussions</h2>
+        </div>
+        <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
+          <form onSubmit={handleSubmitDiscussion} className="mb-4">
+            <input
+              type="text"
+              name="title"
+              value={newDiscussion.title}
+              onChange={handleInputChange}
+              placeholder="Discussion Title"
+              className="w-full p-2 mb-2 border rounded text-gray-800"
+              required
+            />
+            <ReactQuill
+              value={newDiscussionContent}
+              onChange={setNewDiscussionContent}
+              placeholder="Share your thoughts..."
+              modules={{
+                toolbar: [
+                  ['bold', 'italic', 'underline'],
+                  [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                  ['link'],
+                ]
+              }}
+            />
+            <button
+              type="submit"
+              className="mt-2 bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
+            >
+              Post Discussion
+            </button>
+          </form>
+          <ul className="space-y-2">
+            {discussions.map((discussion) => (
+              <li key={discussion.id} className="text-white">
+                <button
+                  onClick={() => handleOpenDiscussion(discussion)}
+                  className="text-left hover:underline"
+                >
+                  {discussion.title}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* Siam Care Events */}
+      <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+          <div className="bg-thai-blue text-white py-2 px-4">
+            <h2 className="text-xl font-bold text-center">Siam Care Events</h2>
           </div>
-          <div className="p-6">
-            <form onSubmit={handleSubmitDiscussion} className="mb-6">
+          <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
+            <form onSubmit={handleCreateEvent} className="mb-4">
               <input
                 type="text"
-                name="title"
-                value={newDiscussion.title}
-                onChange={handleInputChange}
-                placeholder="Discussion Title"
-                className="w-full p-2 mb-2 border rounded"
+                value={newEvent.title}
+                onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                placeholder="Event Title"
+                className="w-full p-2 mb-2 border rounded text-gray-800"
+                required
+              />
+              <input
+                type="date"
+                value={newEvent.date}
+                onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                className="w-full p-2 mb-2 border rounded text-gray-800"
+                required
+              />
+              <input
+                type="text"
+                value={newEvent.location}
+                onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+                placeholder="Event Location"
+                className="w-full p-2 mb-2 border rounded text-gray-800"
                 required
               />
               <textarea
-                name="content"
-                value={newDiscussion.content}
-                onChange={handleInputChange}
-                placeholder="Share your experience or start a discussion..."
-                className="w-full p-2 mb-2 border rounded"
-                rows="4"
+                value={newEvent.description}
+                onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                placeholder="Event Description"
+                className="w-full p-2 mb-2 border rounded text-gray-800"
+                rows="3"
                 required
               />
               <button
                 type="submit"
                 className="bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
               >
-                Post Discussion
+                Create Event
               </button>
             </form>
-            
-            <h3 className="text-xl font-semibold mb-4 text-white">Recent Discussions</h3>
-            {discussions.length > 0 ? (
-              <ul className="space-y-4">
-                {discussions.map((discussion) => (
-                  <li key={discussion.id} className="border-b pb-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="text-lg font-semibold">{discussion.title}</h4>
-                        <p className="text-white mb-2">{discussion.content}</p>
-                        <div className="flex items-center text-sm text-white">
-                          <MessageSquare className="mr-1" size={14} />
-                          <span>{discussion.profiles.username} - {new Date(discussion.created_at).toLocaleString()}</span>
-                        </div>
-                      </div>
-                      {discussion.user_id === currentUser?.id && (
-                        <button
-                          onClick={() => handleDeleteDiscussion(discussion.id)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 size={20} />
+            <ul className="space-y-4">
+              {communityEvents.map((event) => (
+                <li key={event.id} className="border-b pb-4">
+                  <h4 className="text-lg font-semibold text-white">{event.title}</h4>
+                  <p className="text-white">Date: {new Date(event.date).toLocaleDateString()}</p>
+                  <p className="text-white">Location: {event.location}</p>
+                  <p className="text-white">{event.description}</p>
+                  <div className="mt-2">
+                    {currentUser && currentUser.id === event.creator_id && (
+                      <>
+                        <button onClick={() => handleEditEvent(event.id, event)} className="bg-yellow-500 text-white px-2 py-1 rounded mr-2">
+                          Edit
                         </button>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => setSelectedDiscussion(selectedDiscussion === discussion.id ? null : discussion.id)}
-                      className="mt-2 text-white hover:underline"
-                    >
-                      {selectedDiscussion === discussion.id ? 'Hide Comments' : 'Show Comments'}
-                    </button>
-                    {selectedDiscussion === discussion.id && (
-                      <div className="mt-4 pl-4">
-                        <h5 className="font-semibold mb-2">Comments:</h5>
-                        {comments[discussion.id] && comments[discussion.id].length > 0 ? (
-                          <ul className="space-y-2">
-                            {comments[discussion.id].map((comment) => (
-                              <li key={comment.id} className="flex justify-between items-start">
-                                <div>
-                                  <p className="text-sm">{comment.content}</p>
-                                  <span className="text-xs text-white">{comment.profiles.username} - {new Date(comment.created_at).toLocaleString()}</span>
-                                </div>
-                                {comment.user_id === currentUser?.id && (
-                                  <button
-                                    onClick={() => handleDeleteComment(comment.id, discussion.id)}
-                                    className="text-red-500 hover:text-red-700"
-                                  >
-                                    <Trash2 size={16} />
-                                  </button>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-sm text-white">No comments yet.</p>
-                        )}
-                        <form onSubmit={(e) => handleSubmitComment(e, discussion.id)} className="mt-2">
-                          <input
-                            type="text"
-                            value={newComment}
-                            onChange={(e) => setNewComment(e.target.value)}
-                            placeholder="Add a comment..."
-                            className="w-full p-2 border rounded"
-                            required
-                          />
-                          <button
-                            type="submit"
-                            className="mt-2 bg-thai-blue text-white font-bold py-1 px-3 rounded hover:bg-blue-700 transition duration-300"
-                          >
-                            Post Comment
-                          </button>
-                        </form>
-                      </div>
+                        <button onClick={() => handleDeleteEvent(event.id)} className="bg-red-500 text-white px-2 py-1 rounded mr-2">
+                          Delete
+                        </button>
+                      </>
                     )}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-white">No discussions yet. Be the first to start one!</p>
-            )}
-          </div>
-        </div>
-  
-        <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-8">
-          <div className="bg-thai-blue text-white py-4 px-6">
-            <h2 className="text-2xl font-bold text-center">Community Events</h2>
-          </div>
-          <div className="p-6">
-            {communityEvents.length > 0 ? (
-              <ul className="space-y-4">
-                {communityEvents.map((event) => (
-                  <li key={event.id} className="border-b pb-4">
-                    <h4 className="text-lg font-semibold">{event.title}</h4>
-                    <p className="text-white">Date: {event.date}</p>
-                    <p className="text-white">Location: {event.location}</p>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-white">No upcoming events at the moment.</p>
-            )}
-          </div>
-        </div>
-  
-        {selectedUser && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" id="my-modal">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-blue-600">
-              <div className="mt-3 text-center">
-                <h3 className="text-lg leading-6 font-medium text-white">Messages</h3>
-                <div className="mt-2 px-7 py-3">
-                  <div className="max-h-60 overflow-y-auto mb-4">
-                    {messages.map((message) => (
-                      <div key={message.id} className={`mb-2 ${message.sender_id === selectedUser ? 'text-right' : 'text-left'}`}>
-                        <span className={`inline-block p-2 rounded-lg ${message.sender_id === selectedUser ? 'bg-thai-blue text-white' : 'bg-blue-600'}`}>
-                          {message.content}
-                        </span>
-                      </div>
-                    ))}
+                    {attendees[event.id] && attendees[event.id].includes(currentUser.username) ? (
+                      <button onClick={() => handleCancelAttendance(event.id)} className="bg-red-500 text-white px-2 py-1 rounded mr-2">
+                        Cancel Attendance
+                      </button>
+                    ) : (
+                      <button onClick={() => handleAttendEvent(event.id)} className="bg-green-500 text-white px-2 py-1 rounded mr-2">
+                        Attend
+                      </button>
+                    )}
+                    <button onClick={() => setShowAttendees(event.id)} className="bg-blue-500 text-white px-2 py-1 rounded">
+                      Show Attendees ({attendees[event.id] ? attendees[event.id].length : 0})
+                    </button>
                   </div>
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your message..."
-                    className="w-full p-2 border rounded mb-2"
-                  />
-                  <button
-                    onClick={sendMessage}
-                    className="bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
-                  >
-                    Send
-                  </button>
-                </div>
-              </div>
-              <div className="items-center px-4 py-3">
-                <button
-                  onClick={() => setSelectedUser(null)}
-                  className="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
+                </li>
+              ))}
+            </ul>
           </div>
-        )}
+        </div>
       </div>
-    );
-  };
-  
-  export default CommunityNetwork;
+{/* Pop-up for selected discussion */}
+      {selectedDiscussionDetails && (
+        <DiscussionPopup
+          discussion={selectedDiscussionDetails}
+          onClose={handleCloseDiscussion}
+        />
+      )}
+
+      {/* Mini Profile Card */}
+      {selectedProfile && (
+        <MiniProfileCard profile={selectedProfile} onClose={handleCloseProfile} />
+      )}
+
+      {/* Attendees Popup */}
+      {showAttendees && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" onClick={() => setShowAttendees(null)}>
+          <div className="bg-blue-600 p-6 rounded-lg shadow-xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-bold text-white mb-4">Event Attendees</h3>
+            <ul className="text-white">
+              {attendees[showAttendees] && attendees[showAttendees].map((attendee, index) => (
+                <li key={index} className="mb-2">
+                  <button 
+                    onClick={() => {
+                      handleProfileClick(attendee.user_id);
+                      setShowAttendees(null);
+                    }} 
+                    className="text-left hover:underline"
+                  >
+                    {attendee.username}
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={() => setShowAttendees(null)}
+              className="mt-4 bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Chat Tabs */}
+      <div className="fixed bottom-0 right-0 flex flex-col-reverse items-end space-y-reverse space-y-1 p-4">
+        {activeChats.map(chat => (
+          <ChatTab key={chat.userId} chat={chat} onClose={handleCloseChat} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default CommunityNetwork;

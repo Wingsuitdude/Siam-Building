@@ -2,8 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
 import { toast } from 'react-toastify';
 import { AlertTriangle, Phone, Map, Info } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+
+// Fix Leaflet icon issue
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+// Component to update map view when center changes
+function ChangeView({ center, zoom }) {
+  const map = useMap();
+  map.setView(center, zoom);
+  return null;
+}
 
 const EmergencyServices = () => {
   const [isBeaconActive, setIsBeaconActive] = useState(false);
@@ -12,11 +28,23 @@ const EmergencyServices = () => {
   const [userLocation, setUserLocation] = useState(null);
   const [emergencyDetails, setEmergencyDetails] = useState('');
   const [stressLevel, setStressLevel] = useState('small-boo-boo');
+  const [isPremiumUser, setIsPremiumUser] = useState(false);
 
   useEffect(() => {
     getUserLocation();
     fetchActiveBeacons();
     checkUserBeaconStatus();
+    checkUserPremiumStatus();
+    
+    // Load Stripe script
+    const script = document.createElement('script');
+    script.src = 'https://js.stripe.com/v3/buy-button.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
   }, []);
 
   const getUserLocation = () => {
@@ -82,7 +110,32 @@ const EmergencyServices = () => {
     }
   };
 
+  const checkUserPremiumStatus = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('is_premium')
+          .eq('id', user.id)
+          .single();
+
+        if (error) throw error;
+
+        setIsPremiumUser(data.is_premium);
+      }
+    } catch (error) {
+      console.error("Error checking premium status:", error);
+      toast.error('Failed to check premium status');
+    }
+  };
+
   const toggleBeacon = async () => {
+    if (!isPremiumUser) {
+      toast.error('Beacon activation is only available for Care+ members');
+      return;
+    }
+
     console.log("Toggling beacon...");
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -170,17 +223,25 @@ const EmergencyServices = () => {
           <h2 className="text-2xl font-bold text-center">Emergency Beacon</h2>
         </div>
         <div className="p-6">
-          <button 
-            onClick={() => {
-              console.log("Button clicked");
-              toggleBeacon();
-            }}
-            className={`w-full py-3 px-4 rounded-lg text-white font-bold mb-4 transition duration-300 ${
-              isBeaconActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
-            }`}
-          >
-            {isBeaconActive ? 'Deactivate Beacon' : 'Activate Beacon'}
-          </button>
+          {isPremiumUser ? (
+            <button 
+              onClick={toggleBeacon}
+              className={`w-full py-3 px-4 rounded-lg text-white font-bold mb-4 transition duration-300 ${
+                isBeaconActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
+              }`}
+            >
+              {isBeaconActive ? 'Deactivate Beacon' : 'Activate Beacon'}
+            </button>
+          ) : (
+            <div className="text-center mb-4">
+              <p className="text-white mb-2">Beacon activation is only available for Care+ members.</p>
+              <stripe-buy-button
+                buy-button-id="buy_btn_1PvPyLRxsRHMbmw841au1q2r"
+                publishable-key="pk_live_51PrZqYRxsRHMbw8b8YkoACWONSK3BuSTBKtCGgykFE2p957pWdFvJkkMW4DxVoDTTNEoCsn3ifeZ9Zyz4Lbkm2400ElR9TbRR"
+              >
+              </stripe-buy-button>
+            </div>
+          )}
           
           {isBeaconActive && (
             <div className="space-y-4">
@@ -188,13 +249,13 @@ const EmergencyServices = () => {
                 value={emergencyDetails}
                 onChange={(e) => setEmergencyDetails(e.target.value)}
                 placeholder="Describe your emergency..."
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-thai-blue focus:border-transparent"
+                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-thai-blue focus:border-transparent text-gray-700"
                 rows="3"
               />
               <select
                 value={stressLevel}
                 onChange={(e) => setStressLevel(e.target.value)}
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-thai-blue focus:border-transparent"
+                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-thai-blue focus:border-transparent text-gray-700"
               >
                 <option value="small-boo-boo">Small Boo-boo</option>
                 <option value="concerning">Concerning</option>
@@ -220,10 +281,10 @@ const EmergencyServices = () => {
           {activeBeacons.length > 0 ? (
             <ul className="space-y-4">
               {activeBeacons.map((beacon) => (
-                <li key={beacon.id} className="border-b pb-4">
+                <li key={beacon.id} className="border-b pb-4 text-white">
                   <h3 className="font-semibold text-lg text-center">{beacon.profiles.username}'s Emergency</h3>
-                  <p className="text-gray-600 text-center">Stress Level: {beacon.stress_level}</p>
-                  <p className="text-gray-600 text-center">Details: {beacon.details}</p>
+                  <p className="text-center">Stress Level: {beacon.stress_level}</p>
+                  <p className="text-center">Details: {beacon.details}</p>
                   <div className="text-center mt-2">
                     <button
                       onClick={() => setSelectedBeacon(beacon)}
@@ -248,12 +309,19 @@ const EmergencyServices = () => {
           </div>
           <div className="p-6">
             <div className="h-96 w-full">
-              <MapContainer center={parseLocation(selectedBeacon.location)} zoom={13} className="h-full w-full">
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                <Marker position={parseLocation(selectedBeacon.location)}>
-                  <Popup>{selectedBeacon.profiles.username}'s location</Popup>
-                </Marker>
-              </MapContainer>
+              {parseLocation(selectedBeacon.location) && (
+                <MapContainer 
+                  center={parseLocation(selectedBeacon.location)} 
+                  zoom={13} 
+                  style={{ height: '100%', width: '100%' }}
+                >
+                  <ChangeView center={parseLocation(selectedBeacon.location)} zoom={13} />
+                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                  <Marker position={parseLocation(selectedBeacon.location)}>
+                    <Popup>{selectedBeacon.profiles.username}'s location</Popup>
+                  </Marker>
+                </MapContainer>
+              )}
             </div>
           </div>
         </div>
@@ -261,21 +329,18 @@ const EmergencyServices = () => {
 
       <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
         <div className="bg-thai-blue text-white py-4 px-6">
-          <h2 className="text-2xl font-bold text-center">Emergency Contacts</h2>
+          <h2 className="text-2xl font-bold text-center">Thailand Emergency Contacts</h2>
         </div>
         <div className="p-6">
-          <ul className="space-y-2">
+          <ul className="space-y-2 text-white">
             <li className="flex items-center justify-center">
-              <Phone className="mr-2 text-white" size={20} />
-              <span>Police: 191</span>
+              <span>🚓Police: 191</span>
             </li>
             <li className="flex items-center justify-center">
-              <Phone className="mr-2 text-white" size={20} />
-              <span>Ambulance: 1669</span>
+              <span>🚑Ambulance: 1669</span>
             </li>
             <li className="flex items-center justify-center">
-              <Phone className="mr-2 text-white" size={20} />
-              <span>Fire: 199</span>
+              <span>🚒Fire: 199</span>
             </li>
           </ul>
         </div>

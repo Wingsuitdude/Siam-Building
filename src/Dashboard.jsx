@@ -29,6 +29,7 @@ const DashboardProfile = () => {
     };
   }, []);
 
+
   const fetchProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
@@ -266,24 +267,24 @@ const DashboardProfile = () => {
               {!profile.is_premium ? (
                 <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-2xl overflow-hidden p-6">
                   <h3 className="text-2xl font-bold text-white mb-4 animate-pulse">Upgrade to Care+</h3>
-                  <p className="text-white text-lg mb-6">Experience premium healthcare services in Thailand.</p>
+                  <p className="text-white text-lg mb-6">Unlock rapid medical assistance in The Land of Smiles. </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <PremiumFeature icon={<AlertTriangle />} text="Send Emergency Beacons" />
-                    <PremiumFeature icon={<MapPin />} text="Detailed Facility Finder" />
-                    <PremiumFeature icon={<Star />} text="Network of Community Volunteers" />
+                    <PremiumFeature icon={<AlertTriangle />} text="Activate Emergency Beacons" />
+                    <PremiumFeature icon={<MapPin />} text="Unlock Facility Finder" />
+                    
                   </div>
                   <div className="flex justify-center">
-                    <stripe-buy-button
-                      buy-button-id="buy_btn_1PsbXzRxsRHMbmw8BFV1QnsO"
-                      publishable-key="pk_live_51PrZqYRxsRHMbmw8b8YkoACWONSK3BuSTBKtCGgykFE2p957pWdFvJkkMW4DxVoDTTNEoCsn3ifeZ9Zyz4Lbkm2400ElR9TbRR"
-                    >
-                    </stripe-buy-button>
+                  <stripe-buy-button
+  buy-button-id="buy_btn_1PvPyLRxsRHMbmw841au1q2r"
+  publishable-key="pk_live_51PrZqYRxsRHMbmw8b8YkoACWONSK3BuSTBKtCGgykFE2p957pWdFvJkkMW4DxVoDTTNEoCsn3ifeZ9Zyz4Lbkm2400ElR9TbRR"
+>
+</stripe-buy-button>
                   </div>
                 </div>
               ) : (
                 <div className="bg-gradient-to-r from-green-400 to-blue-500 rounded-lg shadow-xl p-6">
-                  <h3 className="text-2xl font-bold text-white mb-4">You are a Care+ Member!</h3>
-                  <p className="text-white text-lg">Enjoy your premium features and welcome to the community!</p>
+                  <h3 className="text-2xl font-bold text-white mb-4">Thank you for joining Care+</h3>
+                  <p className="text-white text-lg">Seamless healthcare access awaits you in The Land of Smiles.</p>
                 </div>
               )}
             </div>
