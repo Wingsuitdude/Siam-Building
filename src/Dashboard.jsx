@@ -267,7 +267,7 @@ const DashboardProfile = () => {
               {!profile.is_premium ? (
                 <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-2xl overflow-hidden p-6">
                   <h3 className="text-2xl font-bold text-white mb-4 animate-pulse">Upgrade to Care+</h3>
-                  <p className="text-white text-lg mb-6">Unlock rapid medical assistance in The Land of Smiles. </p>
+                  <p className="text-white text-lg mb-6">Unlock rapid healthcare assistance in The Land of Smiles. </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <PremiumFeature icon={<AlertTriangle />} text="Activate Emergency Beacons" />
                     <PremiumFeature icon={<MapPin />} text="Unlock Facility Finder" />

@@ -153,7 +153,7 @@ const LandingPage = () => {
         transition={{ delay: 0.55 }}
         className="text-2xl mb-12"
       >
-        Medical assistance in The Land of Smiles.
+        Healthcare assistance in The Land of Smiles.
       </motion.p>
       <motion.div
         initial={{ opacity: 0, scale: 0.5 }}

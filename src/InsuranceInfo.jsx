@@ -117,11 +117,11 @@ const InsuranceInfo = () => {
             {insuranceLevels.map((plan, index) => (
               <div 
                 key={index} 
-                className={`rounded-lg shadow-xl p-4 w-80 flex flex-col justify-between ${plan.className} ${index === 1 ? 'animate-bulge' : ''} border-4 border-thai-red relative overflow-hidden`}
+                className={`rounded-lg shadow-xl p-4 w-80 flex flex-col justify-between ${plan.className} ${index === 1 ? 'animate-bulge' : ''} border-4 border-thai-blue relative overflow-hidden`}
               >
                 <div>
                   <h2 className="text-2xl font-bold text-white mb-2">{plan.title}</h2>
-                  {index === 1 && <span className="bg-red-500 text-white px-2 py-1 rounded-full text-sm font-bold">Best Deal</span>}
+                  {index === 1 && <span className="bg-thai-blue text-white px-2 py-1 rounded-full text-sm font-bold">Best Deal</span>}
                   <p className="text-lg font-semibold text-white mb-2">{plan.coverage} Coverage</p>
                   <p className="text-md text-white mb-4">From {plan.price}</p>
                   {renderFeatures(plan.features, index === 2)}
