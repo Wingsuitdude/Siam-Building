@@ -1,10 +1,63 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabase';
 import { toast } from 'react-toastify';
-import { Users, Calendar, MapPin, UserPlus, Award, MessageSquare, UserCheck, Mail, X, Trash2, Bold, Italic, Underline } from 'lucide-react';
+import { Users, Calendar, MapPin, UserPlus, Award, MessageSquare, UserCheck, Mail, X, Trash2, Bold, Italic, Underline, Plus } from 'lucide-react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
+const ChatTab = ({ chat, onClose, messages, sendMessage }) => {
+  const [newMessage, setNewMessage] = useState('');
+
+  const handleSend = () => {
+    if (newMessage.trim()) {
+      sendMessage(chat.userId, newMessage);
+      setNewMessage('');
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  return (
+    <div className="bg-blue-600 rounded-t-lg shadow-lg w-72 flex flex-col"> {/* Changed background to blue-600 */}
+    <div className="bg-thai-blue text-white p-2 flex justify-between items-center rounded-t-lg"> {/* Added rounded-t-lg */}
+      <span>{chat.username}</span>
+      <button onClick={() => onClose(chat.userId)} className="text-white">
+        <X size={16} />
+      </button>
+    </div>
+      <div className="flex-grow overflow-y-auto p-2" style={{ maxHeight: "250px" }}>
+        {messages.filter(m => m.sender_id === chat.userId || m.recipient_id === chat.userId).map((message, index) => (
+          <div key={index} className={`mb-2 ${message.sender_id === chat.userId ? 'text-left' : 'text-right'}`}>
+            <span className={`inline-block p-2 rounded-lg ${message.sender_id === chat.userId ? 'bg-gray-200' : 'bg-blue-200'}`}>
+              {message.content}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="p-2 flex">
+        <input
+          type="text"
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          onKeyPress={handleKeyPress}
+          className="flex-grow border rounded-l-lg p-1"
+          placeholder="Type a message..."
+        />
+        <button 
+          onClick={handleSend} 
+          className="bg-thai-blue text-white p-1 rounded-r-lg"
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const CommunityNetwork = () => {
   const [nearbyUsers, setNearbyUsers] = useState([]);
@@ -13,12 +66,12 @@ const CommunityNetwork = () => {
   const [newDiscussion, setNewDiscussion] = useState({ title: '', content: '' });
   const [connections, setConnections] = useState([]);
   const [pendingConnections, setPendingConnections] = useState([]);
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState({});
   const [newMessage, setNewMessage] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [communityEvents, setCommunityEvents] = useState([]);
-  const [newEvent, setNewEvent] = useState({ title: '', date: '', location: '', description: '' });
-  const [attendees, setAttendees] = useState({});
+  const [newEvent, setNewEvent] = useState({ title: '', date: '', time: '', location: '', description: '' });
+  const [eventAttendees, setEventAttendees] = useState({});
   const [showAttendees, setShowAttendees] = useState(null);
   const [comments, setComments] = useState({});
   const [newComment, setNewComment] = useState('');
@@ -28,6 +81,10 @@ const CommunityNetwork = () => {
   const [activeChats, setActiveChats] = useState([]);
   const [selectedDiscussionDetails, setSelectedDiscussionDetails] = useState(null);
   const [newDiscussionContent, setNewDiscussionContent] = useState('');
+  const [showNewDiscussionForm, setShowNewDiscussionForm] = useState(false);
+  const [showNewEventForm, setShowNewEventForm] = useState(false);
+  const [selectedEventDetails, setSelectedEventDetails] = useState(null);
+  const quillRef = useRef(null);
 
   useEffect(() => {
     fetchCurrentUser();
@@ -96,23 +153,24 @@ const CommunityNetwork = () => {
     }
   };
 
-  const fetchComments = async (discussionId) => {
+  const fetchComments = async (id, type = 'discussion') => {
     const { data, error } = await supabase
       .from('comments')
       .select(`
         *,
         profiles!user_id (username)
       `)
-      .eq('discussion_id', discussionId)
+      .eq(`${type}_id`, id)
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Error fetching comments:', error);
-      toast.error('Failed to fetch comments');
+      console.error(`Error fetching comments for ${type}:`, error);
+      toast.error(`Failed to fetch comments for ${type}`);
     } else {
-      setComments(prev => ({ ...prev, [discussionId]: data }));
+      setComments(prev => ({ ...prev, [`${type}_${id}`]: data }));
     }
   };
+
   const handleCreateEvent = async (e) => {
     e.preventDefault();
     const { data: { user } } = await supabase.auth.getUser();
@@ -126,7 +184,8 @@ const CommunityNetwork = () => {
         toast.error('Failed to create event');
       } else {
         toast.success('Event created successfully');
-        setNewEvent({ title: '', date: '', location: '', description: '' });
+        setNewEvent({ title: '', date: '', time: '', location: '', description: '' });
+        setShowNewEventForm(false);
         fetchCommunityEvents();
       }
     }
@@ -201,13 +260,31 @@ const CommunityNetwork = () => {
   const fetchEventAttendees = async (eventId) => {
     const { data, error } = await supabase
       .from('event_attendees')
-      .select('profiles(username)')
+      .select('profiles(id, username)')
       .eq('event_id', eventId);
 
     if (error) {
       console.error('Error fetching event attendees:', error);
     } else {
-      setAttendees({ ...attendees, [eventId]: data.map(a => a.profiles.username) });
+      setEventAttendees(prev => ({ ...prev, [eventId]: data.map(a => a.profiles) }));
+    }
+  };
+
+  const fetchCommunityEvents = async () => {
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .order('date', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching community events:', error);
+      toast.error('Failed to fetch community events');
+    } else {
+      setCommunityEvents(data);
+      data.forEach(event => {
+        fetchEventAttendees(event.id);
+        fetchComments(event.id, 'event');
+      });
     }
   };
   const fetchConnections = async () => {
@@ -246,31 +323,17 @@ const CommunityNetwork = () => {
     }
   };
 
-  const fetchCommunityEvents = async () => {
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .order('date', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching community events:', error);
-      toast.error('Failed to fetch community events');
-    } else {
-      setCommunityEvents(data);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    setNewDiscussion({ ...newDiscussion, [e.target.name]: e.target.value });
-  };
-
   const handleSubmitDiscussion = async (e) => {
     e.preventDefault();
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { data, error } = await supabase
         .from('discussions')
-        .insert([{ ...newDiscussion, user_id: user.id, content: newDiscussionContent }]);
+        .insert([{ 
+          title: newDiscussion.title, 
+          content: newDiscussionContent, 
+          user_id: user.id 
+        }]);
 
       if (error) {
         console.error('Error creating discussion:', error);
@@ -279,6 +342,10 @@ const CommunityNetwork = () => {
         toast.success('Discussion created successfully');
         setNewDiscussion({ title: '', content: '' });
         setNewDiscussionContent('');
+        setShowNewDiscussionForm(false);
+        if (quillRef.current) {
+          quillRef.current.getEditor().setText('');
+        }
         fetchDiscussions();
       }
     }
@@ -299,13 +366,13 @@ const CommunityNetwork = () => {
     }
   };
 
-  const handleSubmitComment = async (e, discussionId) => {
+  const handleSubmitComment = async (e, id, type = 'discussion') => {
     e.preventDefault();
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { data, error } = await supabase
         .from('comments')
-        .insert([{ discussion_id: discussionId, user_id: user.id, content: newComment }]);
+        .insert([{ [`${type}_id`]: id, user_id: user.id, content: newComment }]);
 
       if (error) {
         console.error('Error creating comment:', error);
@@ -313,12 +380,12 @@ const CommunityNetwork = () => {
       } else {
         toast.success('Comment added successfully');
         setNewComment('');
-        fetchComments(discussionId);
+        fetchComments(id, type);
       }
     }
   };
 
-  const handleDeleteComment = async (commentId, discussionId) => {
+  const handleDeleteComment = async (commentId, id, type = 'discussion') => {
     const { error } = await supabase
       .from('comments')
       .delete()
@@ -329,7 +396,7 @@ const CommunityNetwork = () => {
       toast.error('Failed to delete comment');
     } else {
       toast.success('Comment deleted successfully');
-      fetchComments(discussionId);
+      fetchComments(id, type);
     }
   };
 
@@ -362,13 +429,13 @@ const CommunityNetwork = () => {
 
   const handleOpenChat = (userId, username) => {
     if (!activeChats.some(chat => chat.userId === userId)) {
-      setActiveChats([...activeChats, { userId, username }]);
+      setActiveChats(prevChats => [...prevChats, { userId, username }]);
+      fetchMessages(userId);
     }
-    fetchMessages(userId);
   };
 
   const handleCloseChat = (userId) => {
-    setActiveChats(activeChats.filter(chat => chat.userId !== userId));
+    setActiveChats(prevChats => prevChats.filter(chat => chat.userId !== userId));
   };
 
   const fetchMessages = async (userId) => {
@@ -385,27 +452,29 @@ const CommunityNetwork = () => {
         console.error('Error fetching messages:', error);
         toast.error('Failed to fetch messages');
       } else {
-        setMessages(data);
+        setMessages(prevMessages => ({
+          ...prevMessages,
+          [userId]: data
+        }));
       }
     }
   };
 
-  const sendMessage = async (recipientId) => {
+  const sendMessage = async (recipientId, content) => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (user && recipientId && newMessage.trim()) {
-      const { error } = await supabase
+    if (user && recipientId && content.trim()) {
+      const { data, error } = await supabase
         .from('messages')
         .insert({
           sender_id: user.id,
           recipient_id: recipientId,
-          content: newMessage.trim()
+          content: content.trim()
         });
 
       if (error) {
         console.error('Error sending message:', error);
         toast.error('Failed to send message');
       } else {
-        setNewMessage('');
         fetchMessages(recipientId);
       }
     }
@@ -413,11 +482,20 @@ const CommunityNetwork = () => {
 
   const handleOpenDiscussion = (discussion) => {
     setSelectedDiscussionDetails(discussion);
-    fetchComments(discussion.id);
+    fetchComments(discussion.id, 'discussion');
   };
 
   const handleCloseDiscussion = () => {
     setSelectedDiscussionDetails(null);
+  };
+
+  const handleOpenEvent = (event) => {
+    setSelectedEventDetails(event);
+    fetchComments(event.id, 'event');
+  };
+
+  const handleCloseEvent = () => {
+    setSelectedEventDetails(null);
   };
 
   const fetchUserProfile = async (userId) => {
@@ -442,77 +520,6 @@ const CommunityNetwork = () => {
   const handleCloseProfile = () => {
     setSelectedProfile(null);
   };
-
-  const MiniProfileCard = ({ profile, onClose }) => (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" onClick={onClose}>
-      <div className="bg-blue-600 p-6 rounded-lg shadow-xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
-        <button onClick={onClose} className="float-right text-white">
-          <X size={24} />
-        </button>
-        <img src={profile.avatar_url || '/default-avatar.png'} alt={profile.username} className="w-24 h-24 rounded-full mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-white text-center mb-2">{profile.username}</h3>
-        <p className="text-white text-center mb-2">{profile.volunteer_type}</p>
-        <p className="text-white text-center mb-4">{profile.bio}</p>
-        <div className="flex justify-center space-x-4">
-          <button onClick={() => handleOpenChat(profile.id, profile.username)} className="bg-thai-blue text-white px-4 py-2 rounded hover:bg-blue-700">
-            Message
-          </button>
-          <button onClick={() => handleConnect(profile.id)} className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-            Add Friend
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const DiscussionPopup = ({ discussion, onClose }) => (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" onClick={onClose}>
-      <div className="relative top-20 mx-auto p-5 border w-4/5 shadow-lg rounded-md bg-blue-600" onClick={e => e.stopPropagation()}>
-        <div className="mt-3 max-h-[70vh] overflow-y-auto">
-          <h3 className="text-lg leading-6 font-medium text-white">{discussion.title}</h3>
-          <div className="mt-2 px-7 py-3">
-            <div className="text-white" dangerouslySetInnerHTML={{ __html: discussion.content }} />
-            <p className="text-sm text-white mt-2">
-              Posted by: {discussion.profiles.username} - {new Date(discussion.created_at).toLocaleString()}
-            </p>
-          </div>
-          <div className="mt-4">
-            <h4 className="text-white font-medium">Comments</h4>
-            {comments[discussion.id] && comments[discussion.id].map(comment => (
-              <div key={comment.id} className="mt-2 text-white">
-                <p>{comment.content}</p>
-                <p className="text-sm">By: {comment.profiles.username} - {new Date(comment.created_at).toLocaleString()}</p>
-              </div>
-            ))}
-          </div>
-          <form onSubmit={(e) => handleSubmitComment(e, discussion.id)} className="mt-4">
-            <input
-              type="text"
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Add a comment..."
-              className="w-full p-2 border rounded text-gray-800"
-              required
-            />
-            <button
-              type="submit"
-              className="mt-2 bg-thai-blue text-white font-bold py-1 px-3 rounded hover:bg-blue-700 transition duration-300"
-            >
-              Post Comment
-            </button>
-          </form>
-        </div>
-        <div className="items-center px-4 py-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -554,177 +561,24 @@ const CommunityNetwork = () => {
           </div>
         </div>
 
-      {/* Nearby Users */}
-      <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
-        <div className="bg-thai-blue text-white py-2 px-4">
-          <h2 className="text-xl font-bold text-center">Nearby Users</h2>
-        </div>
-        <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
-          <ul>
-            {nearbyUsers.map((user) => (
-              <li key={user.id} className="flex justify-between items-center text-white mb-2">
-                <button onClick={() => handleProfileClick(user.id)} className="text-left hover:underline">
-                  {user.username}
-                </button>
-                <div>
-                  <button onClick={() => handleConnect(user.id)} className="text-blue-300 mr-2">
-                    <UserPlus size={20} />
-                  </button>
-                  <button onClick={() => handleOpenChat(user.id, user.username)} className="text-blue-300">
-                    <Mail size={20} />
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      {/* Top Medics */}
-      <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
-        <div className="bg-thai-blue text-white py-2 px-4">
-          <h2 className="text-xl font-bold text-center">Top Medics</h2>
-        </div>
-        <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
-          <ul>
-            {topMedics.map((medic) => (
-              <li key={medic.id} className="flex justify-between items-center text-white mb-2">
-                <button onClick={() => handleProfileClick(medic.id)} className="text-left hover:underline">
-                  {medic.username}
-                </button>
-                <span>Responses: {medic.response_count}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <div className="grid grid-cols-2 gap-4">
-      {/* Global Discussions */}
-      <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
-        <div className="bg-thai-blue text-white py-2 px-4">
-          <h2 className="text-xl font-bold text-center">Global Discussions</h2>
-        </div>
-        <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
-          <form onSubmit={handleSubmitDiscussion} className="mb-4">
-            <input
-              type="text"
-              name="title"
-              value={newDiscussion.title}
-              onChange={handleInputChange}
-              placeholder="Discussion Title"
-              className="w-full p-2 mb-2 border rounded text-gray-800"
-              required
-            />
-            <ReactQuill
-              value={newDiscussionContent}
-              onChange={setNewDiscussionContent}
-              placeholder="Share your thoughts..."
-              modules={{
-                toolbar: [
-                  ['bold', 'italic', 'underline'],
-                  [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                  ['link'],
-                ]
-              }}
-            />
-            <button
-              type="submit"
-              className="mt-2 bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
-            >
-              Post Discussion
-            </button>
-          </form>
-          <ul className="space-y-2">
-            {discussions.map((discussion) => (
-              <li key={discussion.id} className="text-white">
-                <button
-                  onClick={() => handleOpenDiscussion(discussion)}
-                  className="text-left hover:underline"
-                >
-                  {discussion.title}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      {/* Siam Care Events */}
-      <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+        {/* Nearby Users */}
+        <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
           <div className="bg-thai-blue text-white py-2 px-4">
-            <h2 className="text-xl font-bold text-center">Siam Care Events</h2>
+            <h2 className="text-xl font-bold text-center">Nearby Users</h2>
           </div>
           <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
-            <form onSubmit={handleCreateEvent} className="mb-4">
-              <input
-                type="text"
-                value={newEvent.title}
-                onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                placeholder="Event Title"
-                className="w-full p-2 mb-2 border rounded text-gray-800"
-                required
-              />
-              <input
-                type="date"
-                value={newEvent.date}
-                onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                className="w-full p-2 mb-2 border rounded text-gray-800"
-                required
-              />
-              <input
-                type="text"
-                value={newEvent.location}
-                onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-                placeholder="Event Location"
-                className="w-full p-2 mb-2 border rounded text-gray-800"
-                required
-              />
-              <textarea
-                value={newEvent.description}
-                onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                placeholder="Event Description"
-                className="w-full p-2 mb-2 border rounded text-gray-800"
-                rows="3"
-                required
-              />
-              <button
-                type="submit"
-                className="bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
-              >
-                Create Event
-              </button>
-            </form>
-            <ul className="space-y-4">
-              {communityEvents.map((event) => (
-                <li key={event.id} className="border-b pb-4">
-                  <h4 className="text-lg font-semibold text-white">{event.title}</h4>
-                  <p className="text-white">Date: {new Date(event.date).toLocaleDateString()}</p>
-                  <p className="text-white">Location: {event.location}</p>
-                  <p className="text-white">{event.description}</p>
-                  <div className="mt-2">
-                    {currentUser && currentUser.id === event.creator_id && (
-                      <>
-                        <button onClick={() => handleEditEvent(event.id, event)} className="bg-yellow-500 text-white px-2 py-1 rounded mr-2">
-                          Edit
-                        </button>
-                        <button onClick={() => handleDeleteEvent(event.id)} className="bg-red-500 text-white px-2 py-1 rounded mr-2">
-                          Delete
-                        </button>
-                      </>
-                    )}
-                    {attendees[event.id] && attendees[event.id].includes(currentUser.username) ? (
-                      <button onClick={() => handleCancelAttendance(event.id)} className="bg-red-500 text-white px-2 py-1 rounded mr-2">
-                        Cancel Attendance
-                      </button>
-                    ) : (
-                      <button onClick={() => handleAttendEvent(event.id)} className="bg-green-500 text-white px-2 py-1 rounded mr-2">
-                        Attend
-                      </button>
-                    )}
-                    <button onClick={() => setShowAttendees(event.id)} className="bg-blue-500 text-white px-2 py-1 rounded">
-                      Show Attendees ({attendees[event.id] ? attendees[event.id].length : 0})
+            <ul>
+              {nearbyUsers.map((user) => (
+                <li key={user.id} className="flex justify-between items-center text-white mb-2">
+                  <button onClick={() => handleProfileClick(user.id)} className="text-left hover:underline">
+                    {user.username}
+                  </button>
+                  <div>
+                    <button onClick={() => handleConnect(user.id)} className="text-blue-300 mr-2">
+                      <UserPlus size={20} />
+                    </button>
+                    <button onClick={() => handleOpenChat(user.id, user.username)} className="text-blue-300">
+                      <Mail size={20} />
                     </button>
                   </div>
                 </li>
@@ -732,54 +586,317 @@ const CommunityNetwork = () => {
             </ul>
           </div>
         </div>
+
+        {/* Top Medics */}
+        <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+          <div className="bg-thai-blue text-white py-2 px-4">
+            <h2 className="text-xl font-bold text-center">Top Medics</h2>
+          </div>
+          <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
+            <ul>
+              {topMedics.map((medic) => (
+                <li key={medic.id} className="flex justify-between items-center text-white mb-2">
+                  <button onClick={() => handleProfileClick(medic.id)} className="text-left hover:underline">
+                    {medic.username}
+                  </button>
+                  <span>Responses: {medic.response_count}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
       </div>
-{/* Pop-up for selected discussion */}
-      {selectedDiscussionDetails && (
-        <DiscussionPopup
-          discussion={selectedDiscussionDetails}
-          onClose={handleCloseDiscussion}
-        />
-      )}
-
-      {/* Mini Profile Card */}
-      {selectedProfile && (
-        <MiniProfileCard profile={selectedProfile} onClose={handleCloseProfile} />
-      )}
-
-      {/* Attendees Popup */}
-      {showAttendees && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" onClick={() => setShowAttendees(null)}>
-          <div className="bg-blue-600 p-6 rounded-lg shadow-xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-bold text-white mb-4">Event Attendees</h3>
-            <ul className="text-white">
-              {attendees[showAttendees] && attendees[showAttendees].map((attendee, index) => (
-                <li key={index} className="mb-2">
-                  <button 
-                    onClick={() => {
-                      handleProfileClick(attendee.user_id);
-                      setShowAttendees(null);
-                    }} 
+      <div className="grid grid-cols-2 gap-4">
+        {/* Global Discussions */}
+        <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+          <div className="bg-thai-blue text-white py-2 px-4 flex justify-between items-center">
+            <h2 className="text-xl font-bold">Global Discussions</h2>
+            <button 
+              onClick={() => setShowNewDiscussionForm(!showNewDiscussionForm)}
+              className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
+            >
+              <Plus size={20} />
+            </button>
+          </div>
+          <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
+            {showNewDiscussionForm && (
+              <form onSubmit={handleSubmitDiscussion} className="mb-4">
+                <input
+                  type="text"
+                  value={newDiscussion.title}
+                  onChange={(e) => setNewDiscussion({...newDiscussion, title: e.target.value})}
+                  placeholder="Discussion Title"
+                  className="w-full p-2 mb-2 border rounded text-gray-800"
+                  required
+                />
+                <ReactQuill
+                  ref={quillRef}
+                  value={newDiscussionContent}
+                  onChange={setNewDiscussionContent}
+                  placeholder="Share your thoughts..."
+                  modules={{
+                    toolbar: [
+                      ['bold', 'italic', 'underline'],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      ['link'],
+                    ]
+                  }}
+                />
+                <button
+                  type="submit"
+                  className="mt-2 bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
+                >
+                  Post Discussion
+                </button>
+              </form>
+            )}
+            <ul className="space-y-2">
+              {discussions.map((discussion) => (
+                <li key={discussion.id} className="text-white">
+                  <button
+                    onClick={() => handleOpenDiscussion(discussion)}
                     className="text-left hover:underline"
                   >
-                    {attendee.username}
+                    {discussion.title}
                   </button>
                 </li>
               ))}
             </ul>
-            <button
-              onClick={() => setShowAttendees(null)}
-              className="mt-4 bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
+          </div>
+        </div>
+
+        {/* Siam Care Events */}
+        <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+          <div className="bg-thai-blue text-white py-2 px-4 flex justify-between items-center">
+            <h2 className="text-xl font-bold">Siam Care Events</h2>
+            <button 
+              onClick={() => setShowNewEventForm(!showNewEventForm)}
+              className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
             >
-              Close
+              <Plus size={20} />
+            </button>
+          </div>
+          <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
+            {showNewEventForm && (
+              <form onSubmit={handleCreateEvent} className="mb-4">
+                <input
+                  type="text"
+                  value={newEvent.title}
+                  onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                  placeholder="Event Title"
+                  className="w-full p-2 mb-2 border rounded text-gray-800"
+                  required
+                />
+                <div className="flex mb-2">
+                  <input
+                    type="date"
+                    value={newEvent.date}
+                    onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                    className="w-1/2 p-2 border rounded-l text-gray-800"
+                    required
+                  />
+                  <input
+                    type="time"
+                    value={newEvent.time}
+                    onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
+                    className="w-1/2 p-2 border rounded-r text-gray-800"
+                    required
+                  />
+                </div>
+                <input
+                  type="text"
+                  value={newEvent.location}
+                  onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+                  placeholder="Event Location"
+                  className="w-full p-2 mb-2 border rounded text-gray-800"
+                  required
+                />
+                <textarea
+                  value={newEvent.description}
+                  onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                  placeholder="Event Description"
+                  className="w-full p-2 mb-2 border rounded text-gray-800"
+                  rows="3"
+                  required
+                />
+                <button
+                  type="submit"
+                  className="bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
+                >
+                  Create Event
+                </button>
+              </form>
+            )}
+            <ul className="space-y-4">
+              {communityEvents.map((event) => (
+                <li key={event.id} className="border-b pb-4">
+                  <button
+                    onClick={() => handleOpenEvent(event)}
+                    className="text-left hover:underline text-white"
+                  >
+                    <h4 className="text-lg font-semibold">{event.title}</h4>
+                    <p>Date: {new Date(event.date).toLocaleDateString()} at {event.time}</p>
+                    <p>Location: {event.location}</p>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Discussion Popup */}
+      {selectedDiscussionDetails && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-hidden h-full w-full flex items-center justify-center" onClick={handleCloseDiscussion}>
+          <div className="relative bg-blue-600 w-4/5 h-4/5 rounded-lg shadow-xl flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="bg-thai-blue text-white py-4 px-6 rounded-t-lg">
+              <h3 className="text-xl font-bold">{selectedDiscussionDetails.title}</h3>
+              <p className="text-sm">
+                Posted by: {selectedDiscussionDetails.profiles.username} - {new Date(selectedDiscussionDetails.created_at).toLocaleString()}
+              </p>
+            </div>
+            <div className="flex-grow overflow-y-auto p-6">
+              <div className="text-white" dangerouslySetInnerHTML={{ __html: selectedDiscussionDetails.content }} />
+            </div>
+            <div className="bg-blue-700 p-4">
+              <h4 className="text-white font-medium mb-2">Comments</h4>
+              <div className="max-h-48 overflow-y-auto mb-4">
+                {comments[`discussion_${selectedDiscussionDetails.id}`]?.map(comment => (
+                  <div key={comment.id} className="mb-2 text-white">
+                    <p>{comment.content}</p>
+                    <p className="text-xs">By: {comment.profiles.username} - {new Date(comment.created_at).toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
+              <form onSubmit={(e) => handleSubmitComment(e, selectedDiscussionDetails.id, 'discussion')}>
+                <input
+                  type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Add a comment..."
+                  className="w-full p-2 border rounded text-gray-800"
+                  required
+                />
+                <button
+                  type="submit"
+                  className="mt-2 bg-thai-blue text-white font-bold py-1 px-3 rounded hover:bg-blue-700 transition duration-300"
+                >
+                  Post Comment
+                </button>
+              </form>
+            </div>
+            <button
+              onClick={handleCloseDiscussion}
+              className="absolute top-2 right-2 text-white hover:text-gray-300"
+            >
+              <X size={24} />
             </button>
           </div>
         </div>
       )}
 
+      {/* Event Popup */}
+      {selectedEventDetails && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-hidden h-full w-full flex items-center justify-center" onClick={handleCloseEvent}>
+          <div className="relative bg-blue-600 w-4/5 h-4/5 rounded-lg shadow-xl flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="bg-thai-blue text-white py-4 px-6 rounded-t-lg">
+              <h3 className="text-xl font-bold">{selectedEventDetails.title}</h3>
+              <p className="text-sm">
+                Date: {new Date(selectedEventDetails.date).toLocaleDateString()} at {selectedEventDetails.time}
+              </p>
+              <p className="text-sm">Location: {selectedEventDetails.location}</p>
+            </div>
+            <div className="flex-grow overflow-y-auto p-6">
+              <div className="text-white">{selectedEventDetails.description}</div>
+              <div className="mt-4">
+                {eventAttendees[selectedEventDetails.id] && (
+                  <p className="text-white">
+                    Attendees: {eventAttendees[selectedEventDetails.id].length}
+                  </p>
+                )}
+                {currentUser && (
+                  eventAttendees[selectedEventDetails.id]?.some(attendee => attendee.id === currentUser.id) ? (
+                    <button onClick={() => handleCancelAttendance(selectedEventDetails.id)} className="bg-red-500 text-white px-2 py-1 rounded mr-2">
+                      Cancel Attendance
+                    </button>
+                  ) : (
+                    <button onClick={() => handleAttendEvent(selectedEventDetails.id)} className="bg-green-500 text-white px-2 py-1 rounded mr-2">
+                      Attend
+                    </button>
+                  )
+                )}
+              </div>
+            </div>
+            <div className="bg-blue-700 p-4">
+              <h4 className="text-white font-medium mb-2">Comments</h4>
+              <div className="max-h-48 overflow-y-auto mb-4">
+                {comments[`event_${selectedEventDetails.id}`]?.map(comment => (
+                  <div key={comment.id} className="mb-2 text-white">
+                    <p>{comment.content}</p>
+                    <p className="text-xs">By: {comment.profiles.username} - {new Date(comment.created_at).toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
+              <form onSubmit={(e) => handleSubmitComment(e, selectedEventDetails.id, 'event')}>
+                <input
+                  type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Add a comment..."
+                  className="w-full p-2 border rounded text-gray-800"
+                  required
+                />
+                <button
+                  type="submit"
+                  className="mt-2 bg-thai-blue text-white font-bold py-1 px-3 rounded hover:bg-blue-700 transition duration-300"
+                >
+                  Post Comment
+                </button>
+              </form>
+            </div>
+            <button
+              onClick={handleCloseEvent}
+              className="absolute top-2 right-2 text-white hover:text-gray-300"
+            >
+              <X size={24} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Mini Profile Card */}
+      {selectedProfile && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" onClick={handleCloseProfile}>
+          <div className="bg-blue-600 p-6 rounded-lg shadow-xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
+            <button onClick={handleCloseProfile} className="float-right text-white">
+              <X size={24} />
+            </button>
+            <img src={selectedProfile.avatar_url || '/default-avatar.png'} alt={selectedProfile.username} className="w-24 h-24 rounded-full mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-white text-center mb-2">{selectedProfile.username}</h3>
+            <p className="text-white text-center mb-2">{selectedProfile.volunteer_type}</p>
+            <p className="text-white text-center mb-4">{selectedProfile.bio}</p>
+            <div className="flex justify-center space-x-4">
+              <button onClick={() => handleOpenChat(selectedProfile.id, selectedProfile.username)} className="bg-thai-blue text-white px-4 py-2 rounded hover:bg-blue-700">
+                Message
+              </button>
+              <button onClick={() => handleConnect(selectedProfile.id)} className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                Add Friend
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Chat Tabs */}
-      <div className="fixed bottom-0 right-0 flex flex-col-reverse items-end space-y-reverse space-y-1 p-4">
+      <div className="fixed bottom-0 right-0 flex flex-row-reverse items-end space-x-reverse space-x-2 p-4">
         {activeChats.map(chat => (
-          <ChatTab key={chat.userId} chat={chat} onClose={handleCloseChat} />
+          <ChatTab
+            key={chat.userId}
+            chat={chat}
+            onClose={handleCloseChat}
+            messages={messages[chat.userId] || []}
+            sendMessage={sendMessage}
+          />
         ))}
       </div>
     </div>
