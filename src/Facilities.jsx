@@ -20,19 +20,20 @@ const Facilities = () => {
   const [facilities, setFacilities] = useState([]);
   const [isPremium, setIsPremium] = useState(false);
   const [selectedTypes, setSelectedTypes] = useState({
-    clinics: true,
-    pharmacies: true,
-    privateHospitals: true,
-    publicHospitals: true,
-    dentists: true,
-    cosmeticCenters: true,
-    optometrists: true,
+    clinics: false,
+    pharmacies: false,
+    privateHospitals: false,
+    publicHospitals: false,
+    dentists: false,
+    cosmeticCenters: false,
+    optometrists: false,
   });
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     checkPremiumStatus();
     updateFacilities();
-  }, [selectedTypes]);
+  }, [selectedTypes, searchTerm]);
 
   const checkPremiumStatus = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -60,6 +61,15 @@ const Facilities = () => {
     if (selectedTypes.dentists) allFacilities = [...allFacilities, ...dentists];
     if (selectedTypes.cosmeticCenters) allFacilities = [...allFacilities, ...cosmeticCenters];
     if (selectedTypes.optometrists) allFacilities = [...allFacilities, ...optometrists];
+
+    // Filter facilities based on search term
+    if (searchTerm) {
+      allFacilities = allFacilities.filter(facility =>
+        facility.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        facility.address.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
     setFacilities(allFacilities);
   };
 
@@ -80,6 +90,15 @@ const Facilities = () => {
     </button>
   );
 
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const openGoogleMaps = (address) => {
+    const encodedAddress = encodeURIComponent(address);
+    window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <h1 className="text-3xl font-bold mb-6 text-thai-blue text-center">Healthcare Facilities</h1>
@@ -92,14 +111,14 @@ const Facilities = () => {
             </div>
             <div className="p-6">
               <div className="mb-4">
-                <h3 className="text-lg font-semibold mb-2 text-center">General</h3>
+                <h3 className="text-lg font-semibold mb-2 text-center text-white">General</h3>
                 <FilterButton type="clinics" label="Clinics" />
                 <FilterButton type="pharmacies" label="Pharmacies" />
                 <FilterButton type="privateHospitals" label="Private Hospitals" />
                 <FilterButton type="publicHospitals" label="Public Hospitals" />
               </div>
               <div className="mb-4">
-                <h3 className="text-lg font-semibold mb-2 text-center">Specialists</h3>
+                <h3 className="text-lg font-semibold mb-2 text-center text-white">Specialists</h3>
                 <FilterButton type="dentists" label="Dentists" />
                 <FilterButton type="cosmeticCenters" label="Cosmetic Centers" />
                 <FilterButton type="optometrists" label="Optometrists" />
@@ -112,6 +131,13 @@ const Facilities = () => {
           <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue h-full">
             <div className="bg-thai-blue text-white py-4 px-6">
               <h2 className="text-2xl font-bold text-center">Facility Map</h2>
+              <input
+                type="text"
+                placeholder="Search facilities..."
+                className="w-full px-3 py-2 mt-4 rounded-full text-black"
+                value={searchTerm}
+                onChange={handleSearch}
+              />
             </div>
             <div className="p-6">
               <div className="rounded-lg overflow-hidden shadow-lg" style={{ height: 'calc(100vh - 300px)', minHeight: '400px' }}>
@@ -123,18 +149,31 @@ const Facilities = () => {
                   {facilities.map((facility) => (
                     <Marker key={facility.id} position={[facility.lat, facility.lng]}>
                       <Popup>
-                        {isPremium ? (
-                          <div>
-                            <h3 className="font-bold">{facility.name}</h3>
-                            <p>{facility.address}</p>
-                            <p>Phone: {facility.phone}</p>
-                          </div>
-                        ) : (
-                          <div>
-                            <h3 className="font-bold">{facility.name}</h3>
-                            <p>Upgrade to Care+ to see contact details</p>
-                          </div>
-                        )}
+                        <div className="p-4">
+                          <h3 className="font-bold text-lg mb-2">{facility.name}</h3>
+                          <p className="mb-2">{facility.address}</p>
+                          {isPremium ? (
+                            <>
+                              <p className="mb-2">Phone: {facility.phone}</p>
+                              <div className="flex justify-between">
+                                <button
+                                  className="bg-thai-blue text-white px-4 py-2 rounded"
+                                  onClick={() => window.open(`tel:${facility.phone}`)}
+                                >
+                                  Call
+                                </button>
+                                <button
+                                  className="bg-green-500 text-white px-4 py-2 rounded"
+                                  onClick={() => openGoogleMaps(facility.address)}
+                                >
+                                  Directions
+                                </button>
+                              </div>
+                            </>
+                          ) : (
+                            <p className="text-red-500">Upgrade to Care+ to see contact details and get directions</p>
+                          )}
+                        </div>
                       </Popup>
                     </Marker>
                   ))}
