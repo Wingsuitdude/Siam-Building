@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
 import { toast } from 'react-toastify';
-import { User, Camera, MapPin, AlertTriangle, Shield, Users, Star } from 'lucide-react';
+import { User, Camera, MapPin, AlertTriangle, Shield, Users, Star, X, UserMinus } from 'lucide-react';
 
 const DashboardProfile = () => {
   const [profile, setProfile] = useState({
@@ -14,6 +14,9 @@ const DashboardProfile = () => {
     is_premium: false,
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [pendingOutgoingRequests, setPendingOutgoingRequests] = useState([]);
 
   useEffect(() => {
     fetchProfile();
@@ -146,6 +149,8 @@ const DashboardProfile = () => {
       toast.error('Geolocation is not supported by your browser');
     }
   };
+
+  
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -295,6 +300,8 @@ const DashboardProfile = () => {
   );
 };
 
+
+
 const InputField = ({ label, id, ...props }) => (
   <div>
     <label className="block text-white text-sm font-bold mb-2" htmlFor={id}>
@@ -321,5 +328,7 @@ const PremiumFeature = ({ icon, text }) => (
     <span className="text-lg">{text}</span>
   </div>
 );
+
+
 
 export default DashboardProfile;

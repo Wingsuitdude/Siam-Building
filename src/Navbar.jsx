@@ -9,6 +9,7 @@ const Navbar = () => {
   const location = useLocation();
   const [username, setUsername] = useState('');
   const [isPremium, setIsPremium] = useState(false);
+  const [profilePicture, setProfilePicture] = useState('');
 
   useEffect(() => {
     fetchUserProfile();
@@ -19,7 +20,7 @@ const Navbar = () => {
     if (user) {
       const { data, error } = await supabase
         .from('profiles')
-        .select('username, is_premium')
+        .select('username, is_premium, profile_picture')
         .eq('id', user.id)
         .single();
 
@@ -28,6 +29,7 @@ const Navbar = () => {
       } else if (data) {
         setUsername(data.username || 'User');
         setIsPremium(data.is_premium);
+        setProfilePicture(data.profile_picture || '/default-avatar.png');
       }
     }
   };
@@ -81,7 +83,14 @@ const Navbar = () => {
         </div>
         <div className="flex items-center space-x-4 mr-[2cm]">
           <NavLink to="/dashboard" icon={<User />}>Profile</NavLink>
-          <span className="font-bold">{username}</span>
+          <div className="flex items-center space-x-2">
+            <img 
+              src={profilePicture} 
+              alt={username} 
+              className="w-8 h-8 rounded-full object-cover"
+            />
+            <span className="font-bold">{username}</span>
+          </div>
           <span className={`font-bold ${isPremium ? 'text-yellow-400' : 'text-red-500'}`}>
             {isPremium ? 'CARE+' : 'FREE'}
           </span>

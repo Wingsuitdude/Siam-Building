@@ -24,7 +24,14 @@ const ChatTab = ({ chat, onClose, messages, sendMessage }) => {
   return (
     <div className="bg-blue-600 rounded-t-lg shadow-lg w-72 flex flex-col">
       <div className="bg-thai-blue text-white p-2 flex justify-between items-center rounded-t-lg">
-        <span>{chat.username}</span>
+        <div className="flex items-center">
+          <img 
+            src={chat.profile_picture || '/default-avatar.png'} 
+            alt={chat.username} 
+            className="w-6 h-6 rounded-full mr-2 object-cover"
+          />
+          <span>{chat.username}</span>
+        </div>
         <button onClick={() => onClose(chat.userId)} className="text-white">
           <X size={16} />
         </button>
@@ -115,19 +122,40 @@ const CommunityNetwork = () => {
   };
 
   const fetchNearbyUsers = async () => {
-    const { data } = await supabase.from('profiles').select('*').limit(10);
+    const { data } = await supabase.from('profiles').select('id, username, profile_picture').limit(10);
     setNearbyUsers(data || []);
   };
-
-
+  
   const fetchTopMedics = async () => {
     const { data } = await supabase
       .from('profiles')
-      .select('*')
+      .select('id, username, profile_picture, response_count')
       .eq('is_premium', true)
       .order('response_count', { ascending: false })
       .limit(5);
     setTopMedics(data || []);
+  };
+  
+  const fetchConnections = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase.rpc('get_user_connections', { user_id: user.id });
+      // Fetch profile pictures for connections
+      const connectionIds = data.map(conn => conn.connected_user_id);
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id, profile_picture')
+        .in('id', connectionIds);
+      
+      const profileMap = Object.fromEntries(profileData.map(profile => [profile.id, profile.profile_picture]));
+      
+      const connectionsWithPictures = data.map(conn => ({
+        ...conn,
+        profile_picture: profileMap[conn.connected_user_id]
+      }));
+      
+      setConnections(connectionsWithPictures);
+    }
   };
   
 
@@ -441,13 +469,6 @@ const CommunityNetwork = () => {
     });
   };
 
-  const fetchConnections = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase.rpc('get_user_connections', { user_id: user.id });
-      setConnections(data || []);
-    }
-  };
 
   const fetchPendingConnections = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -653,6 +674,67 @@ const CommunityNetwork = () => {
 
   const handleCloseProfile = () => {
     setSelectedProfile(null);
+  };
+
+  const ChatTab = ({ chat, onClose, messages, sendMessage }) => {
+    const [newMessage, setNewMessage] = useState('');
+  
+    const handleSend = () => {
+      if (newMessage.trim()) {
+        sendMessage(chat.userId, newMessage);
+        setNewMessage('');
+      }
+    };
+  
+    const handleKeyPress = (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    };
+  
+    return (
+      <div className="bg-blue-600 rounded-t-lg shadow-lg w-72 flex flex-col">
+        <div className="bg-thai-blue text-white p-2 flex justify-between items-center rounded-t-lg">
+          <div className="flex items-center">
+            <img 
+              src={chat.profile_picture || '/default-avatar.png'} 
+              alt={chat.username} 
+              className="w-6 h-6 rounded-full mr-2 object-cover"
+            />
+            <span>{chat.username}</span>
+          </div>
+          <button onClick={() => onClose(chat.userId)} className="text-white">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="flex-grow overflow-y-auto p-2" style={{ maxHeight: "250px" }}>
+          {messages.filter(m => m.sender_id === chat.userId || m.recipient_id === chat.userId).map((message, index) => (
+            <div key={index} className={`mb-2 ${message.sender_id === chat.userId ? 'text-left' : 'text-right'}`}>
+              <span className={`inline-block p-2 rounded-lg ${message.sender_id === chat.userId ? 'bg-gray-200' : 'bg-blue-200'}`}>
+                {message.content}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="p-2 flex">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            className="flex-grow border rounded-l-lg p-1"
+            placeholder="Type a message..."
+          />
+          <button 
+            onClick={handleSend} 
+            className="bg-thai-blue text-white p-1 rounded-r-lg"
+          >
+            Send
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
