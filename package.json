@@ -13,7 +13,7 @@
     "@react-google-maps/api": "^2.19.3",
     "@react-leaflet/core": "^2.1.0",
     "@stripe/react-stripe-js": "^2.8.0",
-    "@stripe/stripe-js": "^4.3.0",
+    "@stripe/stripe-js": "^4.4.0",
     "@supabase/supabase-js": "^2.45.2",
     "buffer": "^6.0.3",
     "framer-motion": "^11.3.31",

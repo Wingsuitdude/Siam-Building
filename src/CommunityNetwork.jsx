@@ -3,7 +3,6 @@ import { supabase } from './supabase';
 import { Users, Calendar, MapPin, UserPlus, Award, MessageSquare, UserCheck, UserMinus, Mail, X, Trash2, Edit, Plus } from 'lucide-react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-
 const ChatTab = ({ chat, onClose, messages, sendMessage }) => {
   const [newMessage, setNewMessage] = useState('');
 
@@ -30,7 +29,12 @@ const ChatTab = ({ chat, onClose, messages, sendMessage }) => {
             alt={chat.username} 
             className="w-6 h-6 rounded-full mr-2 object-cover"
           />
-          <span>{chat.username}</span>
+          <span
+            className="cursor-pointer hover:underline"
+            onClick={() => handleProfileClick(chat.userId)}
+          >
+            {chat.username}
+          </span>
         </div>
         <button onClick={() => onClose(chat.userId)} className="text-white">
           <X size={16} />
@@ -64,7 +68,6 @@ const ChatTab = ({ chat, onClose, messages, sendMessage }) => {
     </div>
   );
 };
-
 const CommunityNetwork = () => {
   const [nearbyUsers, setNearbyUsers] = useState([]);
   const [editingComment, setEditingComment] = useState(null);
@@ -124,6 +127,31 @@ const CommunityNetwork = () => {
   const fetchNearbyUsers = async () => {
     const { data } = await supabase.from('profiles').select('id, username, profile_picture').limit(10);
     setNearbyUsers(data || []);
+  };
+
+  const handleProfileClick = (userId) => {
+    // Fetch user profile data
+    const user = [...nearbyUsers, ...connections, ...topMedics].find(u => u.id === userId);
+    if (user) {
+      setSelectedProfile(user);
+    } else {
+      // If user is not in the current lists, fetch from the database
+      fetchUserProfile(userId);
+    }
+  };
+
+  const fetchUserProfile = async (userId) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching user profile:', error);
+    } else {
+      setSelectedProfile(data);
+    }
   };
   
   const fetchTopMedics = async () => {
@@ -232,6 +260,23 @@ const CommunityNetwork = () => {
       console.error('Error fetching event comments:', error.message, error.details);
     }
   };
+
+  const renderUserItem = (user, actions) => (
+    <li key={user.id} className="flex items-center text-white mb-2">
+      <img
+        src={user.profile_picture || '/default-avatar.png'}
+        alt={user.username}
+        className="w-8 h-8 rounded-full mr-2 object-cover"
+      />
+      <span
+        className="cursor-pointer hover:underline"
+        onClick={() => handleProfileClick(user.id)}
+      >
+        {user.username}
+      </span>
+      {actions}
+    </li>
+  );
 
   const fetchDiscussions = async () => {
     const { data } = await supabase
@@ -348,15 +393,7 @@ const CommunityNetwork = () => {
     }
   };
 
-  const handleProfileClick = async (userId) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    setSelectedProfile(data);
-    checkConnectionStatus(userId);
-  };
+
 
   const checkConnectionStatus = (userId) => {
     const isConnected = connections.some(conn => conn.connected_user_id === userId);
@@ -662,14 +699,7 @@ const CommunityNetwork = () => {
     setSelectedEventDetails(null);
   };
 
-  const fetchUserProfile = async (userId) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    setSelectedProfile(data);
-  };
+
 
 
   const handleCloseProfile = () => {
@@ -748,40 +778,20 @@ const CommunityNetwork = () => {
             <h2 className="text-xl font-bold text-center">Your Network</h2>
           </div>
           <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
-          <h3 className="text-white font-semibold mb-2">Pending Connections</h3>
-          <ul className="mb-4">
-            {pendingConnections.map((connection) => (
-              <li key={connection.id} className="flex items-center text-white mb-2">
-                <button onClick={() => handleAcceptConnection(connection.user_id)} className="bg-green-500 text-white px-2 py-1 rounded mr-2">
+            <h3 className="text-white font-semibold mb-2">Pending Connections</h3>
+            <ul className="mb-4">
+              {pendingConnections.map((connection) => renderUserItem(connection.profiles, (
+                <button onClick={() => handleAcceptConnection(connection.user_id)} className="bg-green-500 text-white px-2 py-1 rounded ml-2">
                   Accept
                 </button>
-                <span 
-                  className="cursor-pointer hover:underline"
-                  onClick={() => handleProfileClick(connection.user_id)}
-                >
-                  {connection.profiles.username}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <h3 className="text-white font-semibold mb-2">Your Connections</h3>
-          <ul>
-            {connections.map((connection) => (
-              <li key={connection.connected_user_id} className="flex items-center text-white mb-2">
-                <button onClick={() => handleOpenChat(connection.connected_user_id, connection.username)} className="text-blue-300 mr-2">
-                  <Mail size={20} />
-                </button>
-                <span 
-                  className="cursor-pointer hover:underline"
-                  onClick={() => handleProfileClick(connection.connected_user_id)}
-                >
-                  {connection.username}
-                </span>
-              </li>
-            ))}
-          </ul>
+              )))}
+            </ul>
+            <h3 className="text-white font-semibold mb-2">Your Connections</h3>
+            <ul>
+              {connections.map((connection) => renderUserItem(connection, null))}
+            </ul>
+          </div>
         </div>
-      </div>
 
         {/* Nearby Users */}
         <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
@@ -789,32 +799,12 @@ const CommunityNetwork = () => {
             <h2 className="text-xl font-bold text-center">Nearby Users</h2>
           </div>
           <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
-          <ul>
-            {nearbyUsers.map((user) => {
-              const isConnected = connections.some(conn => conn.connected_user_id === user.id);
-              const isPending = pendingRequests.includes(user.id);
-              return (
-                <li key={user.id} className="flex items-center text-white mb-2">
-                  {!isConnected && !isPending && (
-                    <button onClick={() => handleConnect(user.id)} className="text-blue-300 mr-2">
-                      <UserPlus size={20} />
-                    </button>
-                  )}
-                  <button onClick={() => handleOpenChat(user.id, user.username)} className="text-blue-300 mr-2">
-                    <Mail size={20} />
-                  </button>
-                  <span 
-                    className="cursor-pointer hover:underline"
-                    onClick={() => handleProfileClick(user.id)}
-                  >
-                    {user.username}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
+            <ul>
+              {nearbyUsers.map((user) => renderUserItem(user, null))}
+            </ul>
+          </div>
         </div>
-      </div>
+
         {/* Top Medics */}
         <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
           <div className="bg-thai-blue text-white py-2 px-4">
@@ -822,14 +812,9 @@ const CommunityNetwork = () => {
           </div>
           <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
             <ul>
-              {topMedics.map((medic) => (
-                <li key={medic.id} className="flex justify-between items-center text-white mb-2">
-                  <button onClick={() => handleProfileClick(medic.id)} className="text-left hover:underline">
-                    {medic.username}
-                  </button>
-                  <span>Responses: {medic.response_count}</span>
-                </li>
-              ))}
+              {topMedics.map((medic) => renderUserItem(medic, (
+                <span className="ml-2">Responses: {medic.response_count}</span>
+              )))}
             </ul>
           </div>
         </div>
@@ -1295,45 +1280,8 @@ const CommunityNetwork = () => {
   </div>
 )}
 
-   
-{/* Mini Profile Card */}
-{selectedProfile && (
-  <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" onClick={handleCloseProfile}>
-    <div className="bg-blue-600 p-6 rounded-lg shadow-xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
-      <button onClick={handleCloseProfile} className="float-right text-white">
-        <X size={24} />
-      </button>
-      <img src={selectedProfile.avatar_url || '/default-avatar.png'} alt={selectedProfile.username} className="w-24 h-24 rounded-full mx-auto mb-4" />
-      <h3 className="text-xl font-bold text-white text-center mb-2">{selectedProfile.username}</h3>
-      <p className="text-white text-center mb-2">{selectedProfile.volunteer_type}</p>
-      <p className="text-white text-center mb-4">{selectedProfile.bio}</p>
-      <div className="flex justify-center space-x-4">
-        <button onClick={() => handleOpenChat(selectedProfile.id, selectedProfile.username)} className="bg-thai-blue text-white px-4 py-2 rounded hover:bg-blue-700">
-          Message
-        </button>
-        {isConnected ? (
-          <div className="flex items-center">
-            <span className="text-white mr-2">Connected</span>
-            <button onClick={() => handleDisconnect(selectedProfile.id)} className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">
-              <UserMinus size={16} />
-            </button>
-          </div>
-        ) : pendingOutgoingRequests.includes(selectedProfile.id) ? (
-          <button onClick={() => handleCancelRequest(selectedProfile.id)} className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
-            Cancel Request
-          </button>
-        ) : (
-          <button onClick={() => handleConnect(selectedProfile.id)} className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-            Request Connection
-          </button>
-        )}
-      </div>
-    </div>
-  </div>
-)}
-
-      {/* Chat Tabs */}
-      <div className="fixed bottom-0 right-0 flex flex-row-reverse items-end space-x-reverse space-x-2 p-4">
+    {/* Chat Tabs */}
+    <div className="fixed bottom-0 right-0 flex flex-row-reverse items-end space-x-reverse space-x-2 p-4">
         {activeChats.map(chat => (
           <ChatTab
             key={chat.userId}
@@ -1344,6 +1292,39 @@ const CommunityNetwork = () => {
           />
         ))}
       </div>
+
+      {/* Mini Profile Card */}
+      {selectedProfile && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" onClick={handleCloseProfile}>
+          <div className="bg-blue-600 p-6 rounded-lg shadow-xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
+            <button onClick={handleCloseProfile} className="float-right text-white">
+              <X size={24} />
+            </button>
+            <img src={selectedProfile.profile_picture || '/default-avatar.png'} alt={selectedProfile.username} className="w-24 h-24 rounded-full mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-white text-center mb-2">{selectedProfile.username}</h3>
+            <p className="text-white text-center mb-2">{selectedProfile.volunteer_type}</p>
+            <p className="text-white text-center mb-4">{selectedProfile.bio}</p>
+            <div className="flex justify-center space-x-4">
+              <button onClick={() => handleOpenChat(selectedProfile.id, selectedProfile.username)} className="bg-thai-blue text-white px-4 py-2 rounded hover:bg-blue-700">
+                Message
+              </button>
+              {isConnected ? (
+                <button onClick={() => handleDisconnect(selectedProfile.id)} className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                  Disconnect
+                </button>
+              ) : pendingOutgoingRequests.includes(selectedProfile.id) ? (
+                <button onClick={() => handleCancelRequest(selectedProfile.id)} className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
+                  Cancel Request
+                </button>
+              ) : (
+                <button onClick={() => handleConnect(selectedProfile.id)} className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                  Connect
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
