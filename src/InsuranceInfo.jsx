@@ -1,8 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 const InsuranceInfo = () => {
-  const [showMore, setShowMore] = useState(false);
-
   const insuranceLevels = [
     {
       title: "START",
@@ -11,8 +9,8 @@ const InsuranceInfo = () => {
       features: [
         "Coverage in Thailand",
         "Basic medical care",
-        "Emergency medical evacuation",
-        "24/7 assistance hotline",
+        "Emergency evacuation",
+        "24/7 assistance",
         "COVID-19 coverage",
         "Accident coverage",
         "Personal liability protection",
@@ -29,13 +27,12 @@ const InsuranceInfo = () => {
       features: [
         "Coverage in Southeast Asia",
         "Comprehensive medical care",
-        "Emergency medical evacuation",
-        "24/7 assistance hotline",
+        "Emergency evacuation",
+        "24/7 assistance",
         "Enhanced COVID-19 coverage",
         "Adventure sports coverage",
         "Trip cancellation protection",
-        "Lost baggage compensation",
-        "Coverage for water activities"
+        "Lost baggage compensation"
       ],
       deductible: "0%",
       link: "https://ektatraveling.tp.st/3Q672ngp",
@@ -53,18 +50,7 @@ const InsuranceInfo = () => {
         "Comprehensive COVID-19 coverage",
         "Extreme sports coverage",
         "Trip cancellation & interruption",
-        "Lost baggage & delay compensation",
-        "Rental vehicle coverage",
-        "Legal assistance",
-        "Flight delay compensation",
-        "Extended stay coverage",
-        "Family member visit coverage",
-        "Third-party liability protection",
-        "Personal vehicle coverage",
-        "Repatriation of remains",
-        "Search and rescue operations",
-        "Financial loss protection",
-        "Coverage for all types of recreation"
+        "Lost baggage & delay compensation"
       ],
       deductible: "0%",
       link: "https://ektatraveling.tp.st/3Q672ngp",
@@ -72,26 +58,13 @@ const InsuranceInfo = () => {
     }
   ];
 
-  const renderFeatures = (features, isMaxPlus) => {
-    const displayedFeatures = isMaxPlus ? features.slice(0, showMore ? features.length : 8) : features;
-    return (
-      <>
-        <ul className="text-white mb-4 list-disc list-inside text-sm">
-          {displayedFeatures.map((feature, idx) => (
-            <li key={idx}>{feature}</li>
-          ))}
-        </ul>
-        {isMaxPlus && features.length > 8 && (
-          <button
-            onClick={() => setShowMore(!showMore)}
-            className="text-white underline mb-4"
-          >
-            {showMore ? "Show Less" : "Show More"}
-          </button>
-        )}
-      </>
-    );
-  };
+  const renderFeatures = (features) => (
+    <ul className="text-white list-disc list-inside text-xs">
+      {features.map((feature, idx) => (
+        <li key={idx}>{feature}</li>
+      ))}
+    </ul>
+  );
 
   const additionalInfo = [
     { title: "Visa Support", description: "Our insurance meets requirements for Thai tourist visas, long-stay visas, and work permits, supporting both visitors and expats." },
@@ -105,56 +78,54 @@ const InsuranceInfo = () => {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <h1 className="text-3xl font-bold mb-6 text-thai-blue text-center">Travel Insurance</h1>
+    <div className="container mx-auto p-4 h-screen flex flex-col">
+      <h1 className="text-2xl font-bold mb-4 text-thai-blue text-center">Travel Insurance</h1>
       
-      <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue mb-12">
-        <div className="bg-thai-blue text-white py-4 px-6">
-          <h2 className="text-2xl font-bold text-center">Choose Your Plan</h2>
-        </div>
-        <div className="p-6">
-          <div className="flex flex-wrap justify-center gap-4">
+      <div className="flex-grow flex gap-4">
+        <div className="w-2/3 bg-blue-600 shadow-lg rounded-lg overflow-hidden border-2 border-thai-blue h-[60%] p-[38px]">
+          <div className="bg-thai-blue text-white py-2 px-4 mb-[38px]">
+            <h2 className="text-xl font-bold text-center">Choose Your Plan</h2>
+          </div>
+          <div className="flex justify-between h-[calc(100%-3.5rem-38px)]">
             {insuranceLevels.map((plan, index) => (
               <div 
                 key={index} 
-                className={`rounded-lg shadow-xl p-4 w-80 flex flex-col justify-between ${plan.className} ${index === 1 ? 'animate-bulge' : ''} border-4 border-thai-blue relative overflow-hidden`}
+                className={`${plan.className} ${index === 1 ? 'animate-bulge' : ''} border-2 border-thai-blue relative rounded-lg flex flex-col justify-between`}
+                style={{ width: '250px', padding: '12px', marginRight: index < 2 ? '38px' : '0' }}
               >
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-2">{plan.title}</h2>
-                  {index === 1 && <span className="bg-thai-blue text-white px-2 py-1 rounded-full text-sm font-bold">Best Deal</span>}
-                  <p className="text-lg font-semibold text-white mb-2">{plan.coverage} Coverage</p>
-                  <p className="text-md text-white mb-4">From {plan.price}</p>
-                  {renderFeatures(plan.features, index === 2)}
-                  <p className="text-white mb-4">Deductible: {plan.deductible}</p>
+                  <h2 className="text-lg font-bold text-white mb-1">{plan.title}</h2>
+                  {index === 1 && <span className="bg-thai-blue text-white px-1 py-0.5 rounded-full text-xs font-bold">Best Deal</span>}
+                  <p className="text-sm font-semibold text-white mb-1">{plan.coverage} Coverage</p>
+                  <p className="text-xs text-white mb-2">From {plan.price}</p>
+                  {renderFeatures(plan.features)}
+                  <p className="text-xs text-white mt-2">Deductible: {plan.deductible}</p>
                 </div>
-                <div className="text-center mt-auto">
+                <div className="text-center mt-2">
                   <a 
                     href={plan.link}
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="inline-block bg-white text-thai-blue font-bold py-2 px-6 rounded-full hover:bg-gray-100 transition duration-300"
+                    className="inline-block bg-white text-thai-blue font-bold py-1 px-4 rounded-full text-xs hover:bg-gray-100 transition duration-300"
                   >
                     Buy Now
                   </a>
-                 
                 </div>
                 {index === 2 && <div className="shine-overlay"></div>}
               </div>
             ))}
           </div>
         </div>
-      </div>
 
-      <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
-        <div className="bg-thai-blue text-white py-4 px-6">
-          <h2 className="text-2xl font-bold text-center">Who is insurance suitable for?</h2>
-        </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="w-1/3 bg-blue-600 shadow-lg rounded-lg overflow-hidden border-2 border-thai-blue h-[60%] p-[38px]">
+          <div className="bg-thai-blue text-white py-2 px-4 mb-[38px]">
+            <h2 className="text-xl font-bold text-center">Who Needs It?</h2>
+          </div>
+          <div className="grid grid-cols-1 gap-2 h-[calc(100%-3.5rem-38px)] overflow-y-auto">
             {additionalInfo.map((info, index) => (
-              <div key={index} className="bg-white p-4 rounded shadow border border-thai-blue">
-                <h3 className="font-bold text-lg mb-2 text-blue-600">{info.title}</h3>
-                <p className="text-sm">{info.description}</p>
+              <div key={index} className="bg-white p-2 rounded shadow border border-thai-blue">
+                <h3 className="font-bold text-sm mb-1 text-blue-600">{info.title}</h3>
+                <p className="text-xs">{info.description}</p>
               </div>
             ))}
           </div>
@@ -163,12 +134,12 @@ const InsuranceInfo = () => {
       
       <style jsx>{`
         @keyframes flash {
-          0%, 100% { background-color: #7c3aed; box-shadow: 0 0 20px #7c3aed; }
-          50% { background-color: #9333ea; box-shadow: 0 0 35px #9333ea; }
+          0%, 100% { background-color: #7c3aed; box-shadow: 0 0 10px #7c3aed; }
+          50% { background-color: #9333ea; box-shadow: 0 0 20px #9333ea; }
         }
         @keyframes bulge {
           0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
+          50% { transform: scale(1.03); }
         }
         @keyframes shine {
           0% { transform: translateX(-100%); }
@@ -181,10 +152,11 @@ const InsuranceInfo = () => {
           animation: bulge 2s ease-in-out infinite;
         }
         .glow-purple {
-          box-shadow: 0 0 25px #7c3aed;
+          box-shadow: 0 0 15px #7c3aed;
         }
         .shine-effect {
           position: relative;
+          overflow: hidden;
         }
         .shine-overlay {
           position: absolute;
@@ -199,9 +171,6 @@ const InsuranceInfo = () => {
             rgba(255, 255, 255, 0) 100%
           );
           animation: shine 3s infinite;
-        }
-        .border-thai-red {
-          border-color: #EF4638;
         }
         .border-thai-blue {
           border-color: #00008B;

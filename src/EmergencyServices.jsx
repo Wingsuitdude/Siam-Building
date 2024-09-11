@@ -316,25 +316,55 @@ const EmergencyServices = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Thailand Emergency Contacts */}
-        <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
-          <div className="bg-thai-blue text-white py-4 px-6">
-            <h2 className="text-2xl font-bold text-center">Thailand Emergency Contacts</h2>
-          </div>
-          <div className="p-6">
-            <ul className="space-y-2 text-white">
-              <li className="flex items-center justify-center">
-                <span>🚓Police: 191</span>
-              </li>
-              <li className="flex items-center justify-center">
-                <span>🚑Ambulance: 1669</span>
-              </li>
-              <li className="flex items-center justify-center">
-                <span>🚒Fire: 199</span>
-              </li>
-            </ul>
-          </div>
-        </div>
+{/* Thailand Emergency Contacts */}
+<div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+  <div className="bg-thai-blue text-white py-4 px-6">
+    <h2 className="text-2xl font-bold text-center">Thailand Emergency Contacts</h2>
+  </div>
+  <div className="p-6">
+    <ul className="space-y-4 text-white">
+      <li className="flex items-center justify-between">
+        <span className="flex items-center">
+          <span className="text-2xl mr-2">🚓</span>
+          <span className="font-bold">Police: 191</span>
+        </span>
+      </li>
+      <li className="text-sm ml-8 -mt-2">For crime-related emergencies. Limited English; consider asking a Thai speaker for help.</li>
+      
+      <li className="flex items-center justify-between">
+        <span className="flex items-center">
+          <span className="text-2xl mr-2">🚑</span>
+          <span className="font-bold">Ambulance: 1669</span>
+        </span>
+      </li>
+      <li className="text-sm ml-8 -mt-2">For medical emergencies. Provide exact location and nature of emergency.</li>
+      
+      <li className="flex items-center justify-between">
+        <span className="flex items-center">
+          <span className="text-2xl mr-2">🚒</span>
+          <span className="font-bold">Fire: 199</span>
+        </span>
+      </li>
+      <li className="text-sm ml-8 -mt-2">Call immediately for fires. State location clearly and evacuate the area.</li>
+      
+      <li className="flex items-center justify-between">
+        <span className="flex items-center">
+          <span className="text-2xl mr-2">🛂</span>
+          <span className="font-bold">Tourist Police: 1155</span>
+        </span>
+      </li>
+      <li className="text-sm ml-8 -mt-2">For travel-related issues or if you need an English-speaking officer.</li>
+      
+      <li className="flex items-center justify-between">
+        <span className="flex items-center">
+          <span className="text-2xl mr-2">🛃</span>
+          <span className="font-bold">Immigration Bureau: 1178</span>
+        </span>
+      </li>
+      <li className="text-sm ml-8 -mt-2">For visa-related emergencies or questions about your stay in Thailand.</li>
+    </ul>
+  </div>
+</div>
        
         {selectedBeacon && (
           <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">

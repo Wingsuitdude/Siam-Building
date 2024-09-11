@@ -771,192 +771,210 @@ const CommunityNetwork = () => {
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <h1 className="text-3xl font-bold mb-6 text-thai-blue text-center">Community Network</h1>
       
-      <div className="grid grid-cols-3 gap-4 mb-4">
-        {/* Your Network */}
-        <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
-          <div className="bg-thai-blue text-white py-2 px-4">
-            <h2 className="text-xl font-bold text-center">Your Network</h2>
+      <div className="flex justify-center mb-8">
+        <div className="grid grid-cols-3 gap-4 w-[70%]">
+          {/* Your Network */}
+          <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+            <div className="bg-thai-blue text-white py-2 px-4">
+              <h2 className="text-xl font-bold text-center">Your Network</h2>
+            </div>
+            <div className="p-4 overflow-y-auto" style={{ height: "240px" }}>
+              <h3 className="text-white font-semibold mb-2">Pending Connections</h3>
+              <ul className="mb-4">
+                {pendingConnections.map((connection, index) => renderUserItem(connection.profiles, (
+                  <button onClick={() => handleAcceptConnection(connection.user_id)} className="bg-green-500 text-white px-2 py-1 rounded ml-2">
+                    Accept
+                  </button>
+                ), `pending-${index}`))}
+              </ul>
+              <h3 className="text-white font-semibold mb-2">Your Connections</h3>
+              <ul>
+                {connections.map((connection, index) => renderUserItem(connection, null, `connection-${index}`))}
+              </ul>
+            </div>
           </div>
-          <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
-            <h3 className="text-white font-semibold mb-2">Pending Connections</h3>
-            <ul className="mb-4">
-              {pendingConnections.map((connection) => renderUserItem(connection.profiles, (
-                <button onClick={() => handleAcceptConnection(connection.user_id)} className="bg-green-500 text-white px-2 py-1 rounded ml-2">
-                  Accept
-                </button>
-              )))}
-            </ul>
-            <h3 className="text-white font-semibold mb-2">Your Connections</h3>
-            <ul>
-              {connections.map((connection) => renderUserItem(connection, null))}
-            </ul>
-          </div>
-        </div>
 
-        {/* Nearby Users */}
-        <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
-          <div className="bg-thai-blue text-white py-2 px-4">
-            <h2 className="text-xl font-bold text-center">Nearby Users</h2>
+          {/* Nearby Users */}
+          <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+            <div className="bg-thai-blue text-white py-2 px-4">
+              <h2 className="text-xl font-bold text-center">Nearby Users</h2>
+            </div>
+            <div className="p-4 overflow-y-auto" style={{ height: "240px" }}>
+              <ul>
+                {nearbyUsers.map((user, index) => renderUserItem(user, null, `nearby-${index}`))}
+              </ul>
+            </div>
           </div>
-          <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
-            <ul>
-              {nearbyUsers.map((user) => renderUserItem(user, null))}
-            </ul>
-          </div>
-        </div>
 
-        {/* Top Medics */}
-        <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
-          <div className="bg-thai-blue text-white py-2 px-4">
-            <h2 className="text-xl font-bold text-center">Top Medics</h2>
-          </div>
-          <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
-            <ul>
-              {topMedics.map((medic) => renderUserItem(medic, (
-                <span className="ml-2">Responses: {medic.response_count}</span>
-              )))}
-            </ul>
+          {/* Top Medics */}
+          <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+            <div className="bg-thai-blue text-white py-2 px-4">
+              <h2 className="text-xl font-bold text-center">Top Responders</h2>
+            </div>
+            <div className="p-4 overflow-y-auto" style={{ height: "240px" }}>
+              <ul>
+                {topMedics.map((medic, index) => (
+                  <li key={`medic-${index}`} className="flex items-center text-white mb-2">
+                    <img
+                      src={medic.profile_picture || '/default-avatar.png'}
+                      alt={medic.username}
+                      className="w-8 h-8 rounded-full mr-2 object-cover"
+                    />
+                    <span
+                      className="cursor-pointer hover:underline"
+                      onClick={() => handleProfileClick(medic.id)}
+                    >
+                      {medic.username}: {medic.response_count}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        {/* Global Discussions */}
-        <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
-          <div className="bg-thai-blue text-white py-2 px-4 flex justify-between items-center">
-            <h2 className="text-xl font-bold">Global Discussions</h2>
-            <button 
-              onClick={() => setShowNewDiscussionForm(!showNewDiscussionForm)}
-              className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
-            >
-              <Plus size={20} />
-            </button>
-          </div>
-          <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
-            {showNewDiscussionForm && (
-              <form onSubmit={handleSubmitDiscussion} className="mb-4">
-                <input
-                  type="text"
-                  value={newDiscussion.title}
-                  onChange={(e) => setNewDiscussion({...newDiscussion, title: e.target.value})}
-                  placeholder="Discussion Title"
-                  className="w-full p-2 mb-2 border rounded text-gray-800"
-                  required
-                />
-                <ReactQuill
-                  ref={quillRef}
-                  value={newDiscussionContent}
-                  onChange={setNewDiscussionContent}
-                  placeholder="Share your thoughts..."
-                  modules={{
-                    toolbar: [
-                      ['bold', 'italic', 'underline'],
-                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                      ['link'],
-                    ]
-                  }}
-                />
-                <button
-                  type="submit"
-                  className="mt-2 bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
-                >
-                  Post Discussion
-                </button>
-              </form>
-            )}
-            <ul className="space-y-2">
-              {discussions.map((discussion) => (
-                <li key={discussion.id} className="text-white">
-                  <button
-                    onClick={() => handleOpenDiscussion(discussion)}
-                    className="text-left hover:underline"
-                  >
-                    {discussion.title}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
 
-        {/* Siam Care Events */}
-        <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
-          <div className="bg-thai-blue text-white py-2 px-4 flex justify-between items-center">
-            <h2 className="text-xl font-bold">Siam Care Events</h2>
-            <button 
-              onClick={() => setShowNewEventForm(!showNewEventForm)}
-              className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
-            >
-              <Plus size={20} />
-            </button>
-          </div>
-          <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
-            {showNewEventForm && (
-              <form onSubmit={handleCreateEvent} className="mb-4">
-                <input
-                  type="text"
-                  value={newEvent.title}
-                  onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                  placeholder="Event Title"
-                  className="w-full p-2 mb-2 border rounded text-gray-800"
-                  required
-                />
-                <div className="flex mb-2">
+      <div className="flex justify-center">
+        <div className="grid grid-cols-2 gap-4 w-[70%]">
+          {/* Global Discussions */}
+          <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+            <div className="bg-thai-blue text-white py-2 px-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold">Global Discussions</h2>
+              <button 
+                onClick={() => setShowNewDiscussionForm(!showNewDiscussionForm)}
+                className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
+              >
+                <Plus size={20} />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto" style={{ height: "240px" }}>
+              {showNewDiscussionForm && (
+                <form onSubmit={handleSubmitDiscussion} className="mb-4">
                   <input
-                    type="date"
-                    value={newEvent.date}
-                    onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                    className="w-1/2 p-2 border rounded-l text-gray-800"
+                    type="text"
+                    value={newDiscussion.title}
+                    onChange={(e) => setNewDiscussion({...newDiscussion, title: e.target.value})}
+                    placeholder="Discussion Title"
+                    className="w-full p-2 mb-2 border rounded text-gray-800"
                     required
                   />
-                  <input
-                    type="time"
-                    value={newEvent.time}
-                    onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
-                    className="w-1/2 p-2 border rounded-r text-gray-800"
-                    required
+                  <ReactQuill
+                    ref={quillRef}
+                    value={newDiscussionContent}
+                    onChange={setNewDiscussionContent}
+                    placeholder="Share your thoughts..."
+                    modules={{
+                      toolbar: [
+                        ['bold', 'italic', 'underline'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        ['link'],
+                      ]
+                    }}
                   />
-                </div>
-                <input
-                  type="text"
-                  value={newEvent.location}
-                  onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-                  placeholder="Event Location"
-                  className="w-full p-2 mb-2 border rounded text-gray-800"
-                  required
-                />
-                <textarea
-                  value={newEvent.description}
-                  onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                  placeholder="Event Description"
-                  className="w-full p-2 mb-2 border rounded text-gray-800"
-                  rows="3"
-                  required
-                />
-                <button
-                  type="submit"
-                  className="bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
-                >
-                  Create Event
-                </button>
-              </form>
-            )}
-            <ul className="space-y-4">
-              {communityEvents.map((event) => (
-                <li key={event.id} className="border-b pb-4">
                   <button
-                    onClick={() => handleOpenEvent(event)}
-                    className="text-left hover:underline text-white"
+                    type="submit"
+                    className="mt-2 bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
                   >
-                    <h4 className="text-lg font-semibold">{event.title}</h4>
-                    <p>Date: {new Date(event.date).toLocaleDateString()} at {event.time}</p>
-                    <p>Location: {event.location}</p>
+                    Post Discussion
                   </button>
-                </li>
-              ))}
-            </ul>
+                </form>
+              )}
+              <ul className="space-y-2">
+                {discussions.map((discussion) => (
+                  <li key={discussion.id} className="text-white">
+                    <button
+                      onClick={() => handleOpenDiscussion(discussion)}
+                      className="text-left hover:underline"
+                    >
+                      {discussion.title}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Siam Care Events */}
+          <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+            <div className="bg-thai-blue text-white py-2 px-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold">Siam Care Events</h2>
+              <button 
+                onClick={() => setShowNewEventForm(!showNewEventForm)}
+                className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
+              >
+                <Plus size={20} />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto" style={{ height: "240px" }}>
+              {showNewEventForm && (
+                <form onSubmit={handleCreateEvent} className="mb-4">
+                  <input
+                    type="text"
+                    value={newEvent.title}
+                    onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                    placeholder="Event Title"
+                    className="w-full p-2 mb-2 border rounded text-gray-800"
+                    required
+                  />
+                  <div className="flex mb-2">
+                    <input
+                      type="date"
+                      value={newEvent.date}
+                      onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                      className="w-1/2 p-2 border rounded-l text-gray-800"
+                      required
+                    />
+                    <input
+                      type="time"
+                      value={newEvent.time}
+                      onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
+                      className="w-1/2 p-2 border rounded-r text-gray-800"
+                      required
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    value={newEvent.location}
+                    onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+                    placeholder="Event Location"
+                    className="w-full p-2 mb-2 border rounded text-gray-800"
+                    required
+                  />
+                  <textarea
+                    value={newEvent.description}
+                    onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                    placeholder="Event Description"
+                    className="w-full p-2 mb-2 border rounded text-gray-800"
+                    rows="3"
+                    required
+                  />
+                  <button
+                    type="submit"
+                    className="bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
+                  >
+                    Create Event
+                  </button>
+                </form>
+              )}
+              <ul className="space-y-4">
+                {communityEvents.map((event) => (
+                  <li key={event.id} className="border-b pb-4">
+                    <button
+                      onClick={() => handleOpenEvent(event)}
+                      className="text-left hover:underline text-white"
+                    >
+                      <h4 className="text-lg font-semibold">{event.title}</h4>
+                      <p>Date: {new Date(event.date).toLocaleDateString()} at {event.time}</p>
+                      <p>Location: {event.location}</p>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </div>
+
 
         {/* Discussion Popup */}
   {selectedDiscussionDetails && (

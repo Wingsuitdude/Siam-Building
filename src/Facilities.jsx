@@ -140,7 +140,7 @@ const Facilities = () => {
               />
             </div>
             <div className="p-6">
-              <div className="rounded-lg overflow-hidden shadow-lg" style={{ height: 'calc(100vh - 300px)', minHeight: '400px' }}>
+              <div className="rounded-lg overflow-hidden shadow-lg" style={{ height: 'calc(90vh - 300px)', minHeight: '360px' }}>
                 <MapContainer center={userLocation} zoom={13} style={{ height: '100%', width: '100%' }}>
                   <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
