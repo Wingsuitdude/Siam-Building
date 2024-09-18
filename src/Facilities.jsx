@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { supabase } from './supabase';
 import { clinics, pharmacies, privateHospitals, publicHospitals, dentists, cosmeticCenters, optometrists } from './data';
-
+import { motion } from 'framer-motion';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+import { Search, Phone, Map as MapIcon } from 'lucide-react';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -62,7 +63,6 @@ const Facilities = () => {
     if (selectedTypes.cosmeticCenters) allFacilities = [...allFacilities, ...cosmeticCenters];
     if (selectedTypes.optometrists) allFacilities = [...allFacilities, ...optometrists];
 
-    // Filter facilities based on search term
     if (searchTerm) {
       allFacilities = allFacilities.filter(facility =>
         facility.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -78,16 +78,18 @@ const Facilities = () => {
   };
 
   const FilterButton = ({ type, label }) => (
-    <button
+    <motion.button
       onClick={() => handleTypeToggle(type)}
-      className={`px-3 py-2 rounded-full text-sm font-medium mb-2 w-full ${
+      className={`px-3 py-2 rounded-full text-sm font-medium ${
         selectedTypes[type] 
           ? 'bg-thai-blue text-white' 
           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
       }`}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
     >
       {label}
-    </button>
+    </motion.button>
   );
 
   const handleSearch = (e) => {
@@ -99,89 +101,98 @@ const Facilities = () => {
     window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
   };
 
-  return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <h1 className="text-3xl font-bold mb-6 text-thai-blue text-center">Healthcare Facilities</h1>
-      
-      <div className="flex gap-8">
-        <div className="w-1/3">
-          <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
-            <div className="bg-thai-blue text-white py-4 px-6">
-              <h2 className="text-2xl font-bold text-center">Facility Types</h2>
-            </div>
-            <div className="p-6">
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold mb-2 text-center text-white">General</h3>
-                <FilterButton type="clinics" label="Clinics" />
-                <FilterButton type="pharmacies" label="Pharmacies" />
-                <FilterButton type="privateHospitals" label="Private Hospitals" />
-                <FilterButton type="publicHospitals" label="Public Hospitals" />
-              </div>
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold mb-2 text-center text-white">Specialists</h3>
-                <FilterButton type="dentists" label="Dentists" />
-                <FilterButton type="cosmeticCenters" label="Cosmetic Centers" />
-                <FilterButton type="optometrists" label="Optometrists" />
-              </div>
-            </div>
-          </div>
-        </div>
+  const MapUpdater = ({ facilities }) => {
+    const map = useMap();
+    
+    useEffect(() => {
+      if (facilities.length > 0) {
+        const bounds = L.latLngBounds(facilities.map(f => [f.lat, f.lng]));
+        map.fitBounds(bounds, { padding: [50, 50] });
+      }
+    }, [facilities, map]);
+    
+    return null;
+  };
 
-        <div className="w-2/3">
-          <div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue h-full">
-            <div className="bg-thai-blue text-white py-4 px-6">
-              <h2 className="text-2xl font-bold text-center">Facility Map</h2>
-              <input
-                type="text"
-                placeholder="Search facilities..."
-                className="w-full px-3 py-2 mt-4 rounded-full text-black"
-                value={searchTerm}
-                onChange={handleSearch}
-              />
-            </div>
-            <div className="p-6">
-              <div className="rounded-lg overflow-hidden shadow-lg" style={{ height: 'calc(90vh - 300px)', minHeight: '360px' }}>
-                <MapContainer center={userLocation} zoom={13} style={{ height: '100%', width: '100%' }}>
-                  <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  />
-                  {facilities.map((facility) => (
-                    <Marker key={facility.id} position={[facility.lat, facility.lng]}>
-                      <Popup>
-                        <div className="p-4">
-                          <h3 className="font-bold text-lg mb-2">{facility.name}</h3>
-                          <p className="mb-2">{facility.address}</p>
-                          {isPremium ? (
-                            <>
-                              <p className="mb-2">Phone: {facility.phone}</p>
-                              <div className="flex justify-between">
-                                <button
-                                  className="bg-thai-blue text-white px-4 py-2 rounded"
-                                  onClick={() => window.open(`tel:${facility.phone}`)}
-                                >
-                                  Call
-                                </button>
-                                <button
-                                  className="bg-green-500 text-white px-4 py-2 rounded"
-                                  onClick={() => openGoogleMaps(facility.address)}
-                                >
-                                  Directions
-                                </button>
-                              </div>
-                            </>
-                          ) : (
-                            <p className="text-red-500">Upgrade to Care+ to see contact details and get directions</p>
-                          )}
-                        </div>
-                      </Popup>
-                    </Marker>
-                  ))}
-                </MapContainer>
-              </div>
-            </div>
+  return (
+    <div className="h-screen flex flex-col bg-gray-400 p-4">
+      <h1 className="text-3xl font-bold mb-4 text-thai-blue text-center">Healthcare Facilities</h1>
+      
+      <div className="mb-4">
+        <motion.div 
+          className="bg-blue-900 rounded-lg shadow-lg overflow-hidden"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div className="flex items-center p-2">
+            <Search size={20} className="text-gray-400 mr-2" />
+            <input
+              type="text"
+              placeholder="Search facilities..."
+              className="w-full px-2 py-1 text-lg focus:outline-none"
+              value={searchTerm}
+              onChange={handleSearch}
+            />
           </div>
-        </div>
+        </motion.div>
+      </div>
+
+      <div className="mb-4 flex flex-wrap gap-2 justify-center">
+        <FilterButton type="clinics" label="Clinics" />
+        <FilterButton type="pharmacies" label="Pharmacies" />
+        <FilterButton type="privateHospitals" label="Private Hospitals" />
+        <FilterButton type="publicHospitals" label="Public Hospitals" />
+        <FilterButton type="dentists" label="Dentists" />
+        <FilterButton type="cosmeticCenters" label="Cosmetic Centers" />
+        <FilterButton type="optometrists" label="Optometrists" />
+      </div>
+
+      <div className="flex-grow">
+        <MapContainer center={userLocation} zoom={13} style={{ height: '100%', width: '100%' }} className="rounded-lg shadow-lg">
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          />
+          {facilities.map((facility) => (
+            <Marker key={facility.id} position={[facility.lat, facility.lng]}>
+              <Popup>
+                <div className="p-4">
+                  <h3 className="font-bold text-lg mb-2">{facility.name}</h3>
+                  <p className="mb-2">{facility.address}</p>
+                  {isPremium ? (
+                    <>
+                      <p className="mb-2">Phone: {facility.phone}</p>
+                      <div className="flex justify-between">
+                        <motion.button
+                          className="bg-thai-blue text-white px-4 py-2 rounded flex items-center"
+                          onClick={() => window.open(`tel:${facility.phone}`)}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Phone size={16} className="mr-2" />
+                          Call
+                        </motion.button>
+                        <motion.button
+                          className="bg-green-500 text-white px-4 py-2 rounded flex items-center"
+                          onClick={() => openGoogleMaps(facility.address)}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <MapIcon size={16} className="mr-2" />
+                          Directions
+                        </motion.button>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-red-500">Upgrade to Care+ to see contact details and get directions</p>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+          <MapUpdater facilities={facilities} />
+        </MapContainer>
       </div>
     </div>
   );

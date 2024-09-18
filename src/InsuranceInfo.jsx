@@ -1,6 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Shield, CheckCircle, AlertTriangle, DollarSign, Globe, Activity } from 'lucide-react';
 
 const InsuranceInfo = () => {
+  const [selectedPlan, setSelectedPlan] = useState(null);
+
   const insuranceLevels = [
     {
       title: "START",
@@ -18,7 +22,7 @@ const InsuranceInfo = () => {
       ],
       deductible: "25%",
       link: "https://ektatraveling.tp.st/3Q672ngp",
-      className: "bg-purple-900"
+      color: "bg-purple-600"
     },
     {
       title: "GOLD",
@@ -36,7 +40,7 @@ const InsuranceInfo = () => {
       ],
       deductible: "0%",
       link: "https://ektatraveling.tp.st/3Q672ngp",
-      className: "bg-yellow-500 animate-pulse"
+      color: "bg-yellow-500"
     },
     {
       title: "MAX+",
@@ -54,128 +58,105 @@ const InsuranceInfo = () => {
       ],
       deductible: "0%",
       link: "https://ektatraveling.tp.st/3Q672ngp",
-      className: "bg-purple-600 animate-flash glow-purple shine-effect"
+      color: "bg-purple-800"
     }
   ];
 
-  const renderFeatures = (features) => (
-    <ul className="text-white list-disc list-inside text-xs">
-      {features.map((feature, idx) => (
-        <li key={idx}>{feature}</li>
-      ))}
-    </ul>
-  );
-
   const additionalInfo = [
-    { title: "Visa Support", description: "Our insurance meets requirements for Thai tourist visas, long-stay visas, and work permits, supporting both visitors and expats." },
-    { title: "Everyday Coverage", description: "Comprehensive medical and transportation coverage for daily life in Thailand, from beach visits to commuting in Bangkok." },
-    { title: "Adventure Activities", description: "Extended coverage for popular Thai activities: temple treks, island hopping, scuba diving, and motorbike tours." },
-    { title: "Extreme Sports", description: "For adrenaline junkies: covers rock climbing in Krabi, white-water rafting in Chiang Mai, kiteboarding in Hua Hin, and more." },
-    { title: "Family & Long-term Care", description: "Specialized coverage for families, pregnant women, and long-term health needs, ideal for expats settling in Thailand." },
-    { title: "Regional Travel", description: "Includes coverage for trips to neighboring countries, perfect for visa runs or exploring Southeast Asia." },
-    { title: "Flexible Policies", description: "Customizable plans for both short visits and long-term stays. Adjust coverage as your time in Thailand extends." },
-    { title: "COVID-19 Protection", description: "Comprehensive COVID-19 coverage including testing, treatment, and quarantine expenses up to $70/day for 14 days if required." }
+    { title: "Visa Support", description: "Meets requirements for Thai visas and work permits", icon: <Shield size={24} /> },
+    { title: "Everyday Coverage", description: "Comprehensive coverage for daily life in Thailand", icon: <CheckCircle size={24} /> },
+    { title: "Adventure Activities", description: "Extended coverage for popular Thai activities", icon: <Activity size={24} /> },
+    { title: "Extreme Sports", description: "Covers adrenaline-pumping activities", icon: <AlertTriangle size={24} /> },
+    { title: "Family & Long-term Care", description: "Specialized coverage for families and expats", icon: <CheckCircle size={24} /> },
+    { title: "Regional Travel", description: "Includes coverage for neighboring countries", icon: <Globe size={24} /> },
+    { title: "Flexible Policies", description: "Customizable plans for short visits and long stays", icon: <CheckCircle size={24} /> },
+    { title: "COVID-19 Protection", description: "Comprehensive COVID-19 coverage", icon: <Shield size={24} /> }
   ];
 
   return (
-    <div className="container mx-auto p-4 h-screen flex flex-col">
-      <h1 className="text-2xl font-bold mb-4 text-thai-blue text-center">Travel Insurance</h1>
+    <div className="container mx-auto p-4 space-y-8">
+      <h1 className="text-3xl font-bold text-thai-blue text-center">Travel Insurance</h1>
       
-      <div className="flex-grow flex gap-4">
-        <div className="w-2/3 bg-blue-600 shadow-lg rounded-lg overflow-hidden border-2 border-thai-blue h-[60%] p-[38px]">
-          <div className="bg-thai-blue text-white py-2 px-4 mb-[38px]">
-            <h2 className="text-xl font-bold text-center">Choose Your Plan</h2>
-          </div>
-          <div className="flex justify-between h-[calc(100%-3.5rem-38px)]">
-            {insuranceLevels.map((plan, index) => (
-              <div 
-                key={index} 
-                className={`${plan.className} ${index === 1 ? 'animate-bulge' : ''} border-2 border-thai-blue relative rounded-lg flex flex-col justify-between`}
-                style={{ width: '250px', padding: '12px', marginRight: index < 2 ? '38px' : '0' }}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {insuranceLevels.map((plan, index) => (
+          <motion.div
+            key={index}
+            className={`${plan.color} rounded-lg shadow-lg overflow-hidden`}
+            whileHover={{ scale: 1.03 }}
+            transition={{ type: "spring", stiffness: 300 }}
+          >
+            <div className="p-6 space-y-4">
+              <h2 className="text-2xl font-bold text-white">{plan.title}</h2>
+              <p className="text-xl font-semibold text-white">{plan.coverage} Coverage</p>
+              <p className="text-lg text-white">From {plan.price}</p>
+              <button
+                onClick={() => setSelectedPlan(plan)}
+                className="w-full bg-white text-thai-blue font-bold py-2 px-4 rounded-full hover:bg-gray-100 transition duration-300"
               >
-                <div>
-                  <h2 className="text-lg font-bold text-white mb-1">{plan.title}</h2>
-                  {index === 1 && <span className="bg-thai-blue text-white px-1 py-0.5 rounded-full text-xs font-bold">Best Deal</span>}
-                  <p className="text-sm font-semibold text-white mb-1">{plan.coverage} Coverage</p>
-                  <p className="text-xs text-white mb-2">From {plan.price}</p>
-                  {renderFeatures(plan.features)}
-                  <p className="text-xs text-white mt-2">Deductible: {plan.deductible}</p>
-                </div>
-                <div className="text-center mt-2">
-                  <a 
-                    href={plan.link}
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="inline-block bg-white text-thai-blue font-bold py-1 px-4 rounded-full text-xs hover:bg-gray-100 transition duration-300"
-                  >
-                    Buy Now
-                  </a>
-                </div>
-                {index === 2 && <div className="shine-overlay"></div>}
-              </div>
-            ))}
-          </div>
-        </div>
+                View Details
+              </button>
+            </div>
+          </motion.div>
+        ))}
+      </div>
 
-        <div className="w-1/3 bg-blue-600 shadow-lg rounded-lg overflow-hidden border-2 border-thai-blue h-[60%] p-[38px]">
-          <div className="bg-thai-blue text-white py-2 px-4 mb-[38px]">
-            <h2 className="text-xl font-bold text-center">Who Needs It?</h2>
-          </div>
-          <div className="grid grid-cols-1 gap-2 h-[calc(100%-3.5rem-38px)] overflow-y-auto">
-            {additionalInfo.map((info, index) => (
-              <div key={index} className="bg-white p-2 rounded shadow border border-thai-blue">
-                <h3 className="font-bold text-sm mb-1 text-blue-600">{info.title}</h3>
-                <p className="text-xs">{info.description}</p>
+      <div className="bg-blue-600 rounded-lg shadow-lg p-6">
+        <h2 className="text-2xl font-bold text-white mb-4">Why You Need Insurance</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {additionalInfo.map((info, index) => (
+            <motion.div
+              key={index}
+              className="bg-white p-4 rounded-lg shadow flex items-start space-x-3"
+              whileHover={{ y: -5 }}
+            >
+              <div className="text-thai-blue">{info.icon}</div>
+              <div>
+                <h3 className="font-bold text-lg text-thai-blue">{info.title}</h3>
+                <p className="text-sm text-gray-600">{info.description}</p>
               </div>
-            ))}
-          </div>
+            </motion.div>
+          ))}
         </div>
       </div>
-      
-      <style jsx>{`
-        @keyframes flash {
-          0%, 100% { background-color: #7c3aed; box-shadow: 0 0 10px #7c3aed; }
-          50% { background-color: #9333ea; box-shadow: 0 0 20px #9333ea; }
-        }
-        @keyframes bulge {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.03); }
-        }
-        @keyframes shine {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-        .animate-flash {
-          animation: flash 2s linear infinite;
-        }
-        .animate-bulge {
-          animation: bulge 2s ease-in-out infinite;
-        }
-        .glow-purple {
-          box-shadow: 0 0 15px #7c3aed;
-        }
-        .shine-effect {
-          position: relative;
-          overflow: hidden;
-        }
-        .shine-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(
-            90deg,
-            rgba(255, 255, 255, 0) 0%,
-            rgba(255, 255, 255, 0.3) 50%,
-            rgba(255, 255, 255, 0) 100%
-          );
-          animation: shine 3s infinite;
-        }
-        .border-thai-blue {
-          border-color: #00008B;
-        }
-      `}</style>
+
+      <AnimatePresence>
+        {selectedPlan && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
+            onClick={() => setSelectedPlan(null)}
+          >
+            <motion.div
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 50, opacity: 0 }}
+              className={`${selectedPlan.color} rounded-lg shadow-lg p-6 max-w-md w-full`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 className="text-2xl font-bold text-white mb-4">{selectedPlan.title} Plan</h2>
+              <ul className="space-y-2 mb-4">
+                {selectedPlan.features.map((feature, idx) => (
+                  <li key={idx} className="flex items-center text-white">
+                    <CheckCircle size={16} className="mr-2" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-lg text-white mb-4">Deductible: {selectedPlan.deductible}</p>
+              <a
+                href={selectedPlan.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full bg-white text-thai-blue font-bold py-2 px-4 rounded-full text-center hover:bg-gray-100 transition duration-300"
+              >
+                Buy Now
+              </a>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
