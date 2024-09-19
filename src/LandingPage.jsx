@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { AlertTriangle, MapPin, Shield, Users } from 'lucide-react';
+import { AlertTriangle, MapPin, Shield, Users, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const LandingPage = () => {
@@ -15,8 +15,6 @@ const LandingPage = () => {
   const [modalView, setModalView] = useState('login');
   const navigate = useNavigate();
 
-  
-
   useEffect(() => {
     const thaiText = 'สยามแคร์';
     const englishText = 'Siam Care';
@@ -24,22 +22,20 @@ const LandingPage = () => {
 
     const animateTitle = async () => {
       while (isAnimating) {
-        // Thai to English
         for (let i = 0; i <= englishText.length; i++) {
+          if (!isAnimating) break;
           await new Promise(resolve => setTimeout(resolve, 110));
           setTitleText(englishText.slice(0, i) + thaiText.slice(i));
         }
         
-        // Pause for 2 seconds
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // English to Thai
         for (let i = 0; i <= thaiText.length; i++) {
+          if (!isAnimating) break;
           await new Promise(resolve => setTimeout(resolve, 110));
           setTitleText(thaiText.slice(0, i) + englishText.slice(i));
         }
 
-        // Pause for 2 seconds
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
     };
@@ -51,17 +47,12 @@ const LandingPage = () => {
     };
   }, []);
 
- 
-
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ 
-        email, 
-        password
-      });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) throw error;
 
@@ -125,129 +116,130 @@ const LandingPage = () => {
     { icon: <Users size={32} />, title: "Volunteer Network", description: "Connect with medical professionals. Participate in training and events across Thailand, and compete for a spot in the top medics." },
   ];
 
-
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-thai-blue to-blue-600 text-white flex flex-col justify-center items-center p-4">
+    <div className="min-h-screen bg-gradient-to-b from-thai-blue to-blue-600 text-white flex flex-col justify-center items-center p-4 overflow-x-hidden">
       <motion.main
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.88 }}
-        className="container mx-auto text-center"
-      >
-        <motion.h1
-          initial={{ y: -100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 90, delay: 0.33 }}
-          className="text-8xl font-bold mb-6 title-shine"
-          style={{ fontFamily: "'Yatra One', cursive" }}
-        >
-          <div className="mb-8">
-            <img src="/ele.png" alt="Siam Care Logo" className="w-48 h-48 object-cover rounded-full mx-auto" />
-          </div>
-          {titleText}
-        </motion.h1>
-      <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.55 }}
-        className="text-2xl mb-12"
+        transition={{ duration: 1 }}
+        className="container mx-auto text-center"
       >
-        Healthcare assistance in The Land of Smiles.
-      </motion.p>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.1, duration: 0.1 }}
-        whileHover={{ scale: 1.2 }}
-        whileTap={{ scale: 0.95 }}
-        className="inline-block cursor-pointer relative mb-16 rounded-lg overflow-hidden"
-        style={{ width: 138, height: 138 }}
-      >
-        <motion.img
-          src="/flagbutton.png"
-          alt="Login / Sign-Up"
-          className="w-full h-full object-contain"
-          onClick={toggleModal}
-          animate={{
-            boxShadow: [
-              "0px 0px 0px rgba(255,215,0,0)",
-              "0px 0px 20px rgba(255,215,0,0.7)",
-              "0px 0px 0px rgba(255,215,0,0)"
-            ],
-            scale: [1, 1.05, 1],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            repeatType: "reverse"
-          }}
-        />
-      </motion.div>
-    </motion.main>
-
-    {/* Features section */}
-    <motion.section
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ delay: 0.99 }}
-      className="w-full max-w-6xl"
-    >
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {featureCards.map((card, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 1.32 + index * 0.22 }}
-          >
-            <FeatureCard {...card} />
-          </motion.div>
-        ))}
-      </div>
-    </motion.section>
-
-    {/* Login Modal */}
-    <AnimatePresence>
-      {isModalOpen && (
         <motion.div
+          initial={{ y: -100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 50, delay: 0.5 }}
+          className="mb-8"
+        >
+          <img src="/ele.png" alt="Siam Care Logo" className="w-32 h-32 md:w-48 md:h-48 object-cover rounded-full mx-auto" />
+        </motion.div>
+        <motion.h1
+          className="text-4xl md:text-6xl lg:text-8xl font-bold mb-6 title-shine"
+          style={{ fontFamily: "'Yatra One', cursive" }}
+        >
+          {titleText}
+        </motion.h1>
+        <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
+          transition={{ delay: 1 }}
+          className="text-xl md:text-2xl mb-12"
         >
+          Healthcare assistance in The Land of Smiles.
+        </motion.p>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 1.5, duration: 0.5 }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          className="inline-block cursor-pointer relative mb-16 rounded-lg overflow-hidden"
+        >
+          <motion.img
+            src="/flagbutton.png"
+            alt="Login / Sign-Up"
+            className="w-24 h-24 md:w-32 md:h-32 object-contain"
+            onClick={toggleModal}
+            animate={{
+              boxShadow: [
+                "0px 0px 0px rgba(255,215,0,0)",
+                "0px 0px 20px rgba(255,215,0,0.7)",
+                "0px 0px 0px rgba(255,215,0,0)"
+              ],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              repeatType: "reverse"
+            }}
+          />
+        </motion.div>
+      </motion.main>
+
+      {/* Features section */}
+      <motion.section
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 2 }}
+        className="w-full max-w-6xl"
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {featureCards.map((card, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 2 + index * 0.2 }}
+            >
+              <FeatureCard {...card} />
+            </motion.div>
+          ))}
+        </div>
+      </motion.section>
+
+      {/* Login Modal */}
+      <AnimatePresence>
+        {isModalOpen && (
           <motion.div
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 50, opacity: 0 }}
-            className="bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md text-white"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
           >
-            <h2 className="text-2xl font-bold text-center mb-6">Login to Siam Care</h2>
-            {modalView === 'login' && (
-              <form onSubmit={handleLogin}>
-                <div className="mb-4">
-                  <label htmlFor="email" className="block text-sm font-bold mb-2">Email</label>
+            <motion.div
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 50, opacity: 0 }}
+              className="bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md text-white relative"
+            >
+              <button
+                onClick={toggleModal}
+                className="absolute top-2 right-2 text-gray-400 hover:text-white"
+              >
+                <X size={24} />
+              </button>
+              <h2 className="text-2xl font-bold text-center mb-6">
+                {modalView === 'login' ? 'Login to Siam Care' : 
+                 modalView === 'signup' ? 'Sign Up for Siam Care' : 
+                 'Reset Password'}
+              </h2>
+              {modalView === 'login' && (
+                <form onSubmit={handleLogin} className="space-y-4">
                   <input
                     type="email"
-                    id="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email"
                     className="w-full p-2 border border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
                     required
                   />
-                </div>
-                <div className="mb-6">
-                  <label htmlFor="password" className="block text-sm font-bold mb-2">Password</label>
                   <input
                     type="password"
-                    id="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password"
                     className="w-full p-2 border border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
                     required
                   />
-                </div>
-                <div className="mb-6">
                   <label className="flex items-center">
                     <input
                       type="checkbox"
@@ -257,113 +249,93 @@ const LandingPage = () => {
                     />
                     <span className="text-sm">Remember me</span>
                   </label>
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline hover:bg-blue-700 transition duration-300"
-                >
-                  {loading ? 'Logging in...' : 'Login'}
-                </button>
-                <div className="mt-4 text-center">
                   <button
-                    onClick={() => setModalView('signup')}
-                    className="text-blue-400 hover:underline mr-4"
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline hover:bg-blue-700 transition duration-300"
                   >
-                    Sign Up
+                    {loading ? 'Logging in...' : 'Login'}
                   </button>
-                  <button
-                    onClick={() => setModalView('forgotPassword')}
-                    className="text-blue-400 hover:underline"
-                  >
-                    Forgot Password?
-                  </button>
-                </div>
-              </form>
-            )}
-            {modalView === 'signup' && (
-              <form onSubmit={handleSignUp}>
-                <div className="mb-4">
-                  <label htmlFor="email" className="block text-sm font-bold mb-2">Email</label>
+                  <div className="flex justify-between text-sm">
+                    <button
+                      onClick={() => setModalView('signup')}
+                      className="text-blue-400 hover:underline"
+                    >
+                      Sign Up
+                    </button>
+                    <button
+                      onClick={() => setModalView('forgotPassword')}
+                      className="text-blue-400 hover:underline"
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
+                </form>
+              )}
+              {modalView === 'signup' && (
+                <form onSubmit={handleSignUp} className="space-y-4">
                   <input
                     type="email"
-                    id="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email"
                     className="w-full p-2 border border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
                     required
                   />
-                </div>
-                <div className="mb-6">
-                  <label htmlFor="password" className="block text-sm font-bold mb-2">Password</label>
                   <input
                     type="password"
-                    id="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password"
                     className="w-full p-2 border border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
                     required
                   />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline hover:bg-blue-700 transition duration-300"
-                >
-                  {loading ? 'Signing up...' : 'Sign Up'}
-                </button>
-                <div className="mt-4 text-center">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline hover:bg-blue-700 transition duration-300"
+                  >
+                    {loading ? 'Signing up...' : 'Sign Up'}
+                  </button>
                   <button
                     onClick={() => setModalView('login')}
-                    className="text-blue-400 hover:underline"
+                    className="w-full text-blue-400 hover:underline"
                   >
                     Back to Login
                   </button>
-                </div>
-              </form>
-            )}
-            {modalView === 'forgotPassword' && (
-              <form onSubmit={handleForgotPassword}>
-                <div className="mb-4">
-                  <label htmlFor="email" className="block text-sm font-bold mb-2">Email</label>
+                </form>
+              )}
+              {modalView === 'forgotPassword' && (
+                <form onSubmit={handleForgotPassword} className="space-y-4">
                   <input
                     type="email"
-                    id="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email"
                     className="w-full p-2 border border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
                     required
                   />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline hover:bg-blue-700 transition duration-300"
-                >
-                  {loading ? 'Sending...' : 'Reset Password'}
-                </button>
-                <div className="mt-4 text-center">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline hover:bg-blue-700 transition duration-300"
+                  >
+                    {loading ? 'Sending...' : 'Reset Password'}
+                  </button>
                   <button
                     onClick={() => setModalView('login')}
-                    className="text-blue-400 hover:underline"
+                    className="w-full text-blue-400 hover:underline"
                   >
                     Back to Login
                   </button>
-                </div>
-              </form>
-            )}
-            <button
-              onClick={toggleModal}
-              className="mt-4 w-full bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline hover:bg-gray-600 transition duration-300"
-            >
-              Close
-            </button>
+                </form>
+              )}
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
 
-    <style jsx>{`
+      <style jsx>{`
         @keyframes shine {
           0%, 49% { color: white; text-shadow: 0 0 5px white, 0 0 10px white; }
           50%, 100% { color: #ff4136; text-shadow: 0 0 5px #ff4136, 0 0 10px #ff4136; }
@@ -375,6 +347,7 @@ const LandingPage = () => {
     </div>
   );
 };
+
 
 const FeatureCard = ({ icon, title, description }) => (
 <motion.div
