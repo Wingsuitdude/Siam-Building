@@ -265,6 +265,35 @@ const CommunityNetwork = () => {
     setActiveChats(activeChats.filter(chat => chat.id !== userId));
   };
 
+  const renderUserItem = (user, key) => (
+    <motion.li
+      key={key}
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="flex items-center text-white mb-2 p-2 bg-blue-700 rounded-lg"
+    >
+      <img
+        src={user.profile_picture || '/default-avatar.png'}
+        alt={user.username}
+        className="w-10 h-10 rounded-full mr-3 object-cover"
+      />
+      <div className="flex-grow">
+        <span
+          className="cursor-pointer hover:underline font-medium"
+          onClick={() => handleProfileClick(user.id)}
+        >
+          {user.username}
+        </span>
+        {user.response_count && (
+          <span className="ml-2 text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
+            {user.response_count} responses
+          </span>
+        )}
+      </div>
+    </motion.li>
+  );
+
   const handleProfileClick = (userId) => {
     const user = [...nearbyUsers, ...connections, ...topMedics].find(u => u.id === userId);
     if (user) {
@@ -433,40 +462,10 @@ const CommunityNetwork = () => {
     }
   };
 
-
-      const renderUserItem = (user, actions, key) => (
-        <motion.li
-          key={key}
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          className="flex items-center text-white mb-2 p-2 bg-blue-700 rounded-lg"
-        >
-          <img
-            src={user.profile_picture || '/default-avatar.png'}
-            alt={user.username}
-            className="w-10 h-10 rounded-full mr-3 object-cover"
-          />
-          <div className="flex-grow">
-            <span
-              className="cursor-pointer hover:underline font-medium"
-              onClick={() => handleProfileClick(user.id)}
-            >
-              {user.username}
-            </span>
-            {user.response_count && (
-              <span className="ml-2 text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
-                {user.response_count} responses
-              </span>
-            )}
-          </div>
-          {actions}
-        </motion.li>
-      );
     
       const SectionHeader = ({ title }) => (
         <div className="bg-thai-blue text-white py-2 px-4 rounded-t-lg">
-          <h2 className="text-xl font-bold">{title}</h2>
+          <h2 className="text-xl font-bold text-center">{title}</h2>
         </div>
       );
     
@@ -474,286 +473,233 @@ const CommunityNetwork = () => {
         <div className="container mx-auto px-4 py-8 max-w-7xl">
           <h1 className="text-3xl font-bold mb-6 text-thai-blue text-center">Community Network</h1>
           
-          {isMobile && (
-            <div className="mb-4 flex justify-center">
-              <select 
-                value={activeTab} 
-                onChange={(e) => setActiveTab(e.target.value)}
-                className="w-full max-w-xs p-2 border rounded-lg bg-thai-blue text-white"
-              >
-                <option value="network">Your Network</option>
-                <option value="nearby">Nearby Users</option>
-                <option value="topResponders">Top Responders</option>
-                <option value="discussions">Discussions</option>
-                <option value="events">Events</option>
-              </select>
-            </div>
-          )}
-    
-          <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-3'} gap-4`}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             {/* Your Network */}
-            <AnimatePresence>
-              {(!isMobile || activeTab === 'network') && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue"
-                >
-                  <SectionHeader title="Your Network" />
-                  <div className="p-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
-                    <h3 className="text-white font-semibold mb-2">Pending Connections</h3>
-                    <ul className="mb-4">
-                      <AnimatePresence>
-                        {pendingConnections.map((connection, index) => (
-                          <motion.li
-                            key={`pending-${index}`}
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="flex items-center justify-between bg-blue-700 rounded-lg p-2 mb-2"
-                          >
-                            <span className="text-white">{connection.profiles.username}</span>
-                            <button 
-                              onClick={() => handleAcceptConnection(connection.user_id)} 
-                              className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 transition duration-300"
-                            >
-                              Accept
-                            </button>
-                          </motion.li>
-                        ))}
-                      </AnimatePresence>
-                    </ul>
-                    <h3 className="text-white font-semibold mb-2">Your Connections</h3>
-                    <ul>
-                      <AnimatePresence>
-                        {connections.map((connection, index) => renderUserItem(connection, null, `connection-${index}`))}
-                      </AnimatePresence>
-                    </ul>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-    
-      {/* Nearby Users section */}
-      <AnimatePresence>
-        {(!isMobile || activeTab === 'nearby') && (
-          <motion.div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
-            <SectionHeader title="Nearby Users" />
-            <div className="p-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
-              <ul>
-                <AnimatePresence>
-                  {nearbyUsers.map((user, index) => renderUserItem(user, `nearby-${index}`))}
-                </AnimatePresence>
-              </ul>
+            <div id="network" className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+              <SectionHeader title="Your Network" />
+              <div className="p-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
+                <h3 className="text-white font-semibold mb-2">Pending Connections</h3>
+                <ul className="mb-4">
+                  <AnimatePresence>
+                    {pendingConnections.map((connection, index) => (
+                      <motion.li
+                        key={`pending-${index}`}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="flex items-center justify-between bg-blue-700 rounded-lg p-2 mb-2"
+                      >
+                        <span className="text-white">{connection.profiles.username}</span>
+                        <button 
+                          onClick={() => handleAcceptConnection(connection.user_id)} 
+                          className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 transition duration-300"
+                        >
+                          Accept
+                        </button>
+                      </motion.li>
+                    ))}
+                  </AnimatePresence>
+                </ul>
+                <h3 className="text-white font-semibold mb-2">Your Connections</h3>
+                <ul>
+                  <AnimatePresence>
+                    {connections.map((connection, index) => renderUserItem(connection, `connection-${index}`))}
+                  </AnimatePresence>
+                </ul>
+              </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    
+      
+            {/* Nearby Users section */}
+            <div id="nearby" className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+              <SectionHeader title="Nearby Users" />
+              <div className="p-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
+                <ul>
+                  <AnimatePresence>
+                    {nearbyUsers.map((user, index) => renderUserItem(user, `nearby-${index}`))}
+                  </AnimatePresence>
+                </ul>
+              </div>
+            </div>
+      
             {/* Top Responders */}
-            <AnimatePresence>
-              {(!isMobile || activeTab === 'topResponders') && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue"
-                >
-                  <SectionHeader title="Top Responders" />
-                  <div className="p-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
-                    <ul>
-                      <AnimatePresence>
-                        {topMedics.map((medic, index) => renderUserItem(medic, null, `medic-${index}`))}
-                      </AnimatePresence>
-                    </ul>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-    
-            {/* Global Discussions */}
-            <AnimatePresence>
-              {(!isMobile || activeTab === 'discussions') && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue col-span-full md:col-span-1"
-                >
-                  <SectionHeader title="Global Discussions" />
-                  <div className="p-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
-                    <button 
-                      onClick={() => setShowNewDiscussionForm(!showNewDiscussionForm)}
-                      className="bg-green-500 text-white px-4 py-2 rounded-full mb-4 hover:bg-green-600 transition duration-300 flex items-center justify-center w-full"
-                    >
-                      <Plus size={20} className="mr-2" /> New Discussion
-                    </button>
-                    {showNewDiscussionForm && (
-                      <motion.form 
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        onSubmit={handleSubmitDiscussion} 
-                        className="mb-4"
-                      >
-                        <input
-                          type="text"
-                          value={newDiscussion.title}
-                          onChange={(e) => setNewDiscussion({...newDiscussion, title: e.target.value})}
-                          placeholder="Discussion Title"
-                          className="w-full p-2 mb-2 border rounded text-gray-800"
-                          required
-                        />
-                        <ReactQuill
-                          ref={quillRef}
-                          value={newDiscussionContent}
-                          onChange={setNewDiscussionContent}
-                          placeholder="Share your thoughts..."
-                          modules={{
-                            toolbar: [
-                              ['bold', 'italic', 'underline'],
-                              [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                              ['link'],
-                            ]
-                          }}
-                        />
-                        <button
-                          type="submit"
-                          className="mt-2 bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300 w-full"
-                        >
-                          Post Discussion
-                        </button>
-                      </motion.form>
-                    )}
-                    <ul className="space-y-2">
-                      <AnimatePresence>
-                        {discussions.map((discussion) => (
-                          <motion.li 
-                            key={discussion.id}
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="bg-blue-700 rounded-lg p-3"
-                          >
-                            <button
-                              onClick={() => handleOpenDiscussion(discussion)}
-                              className="text-left hover:underline text-white font-medium"
-                            >
-                              {discussion.title}
-                            </button>
-                            <p className="text-sm text-gray-300 mt-1">
-                              by {discussion.profiles.username} - {new Date(discussion.created_at).toLocaleDateString()}
-                            </p>
-                          </motion.li>
-                        ))}
-                      </AnimatePresence>
-                    </ul>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-    
-            {/* Siam Care Events */}
-            <AnimatePresence>
-              {(!isMobile || activeTab === 'events') && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue col-span-full md:col-span-1"
-                >
-                  <SectionHeader title="Siam Care Events" />
-                  <div className="p-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
-                    <button 
-                      onClick={() => setShowNewEventForm(!showNewEventForm)}
-                      className="bg-green-500 text-white px-4 py-2 rounded-full mb-4 hover:bg-green-600 transition duration-300 flex items-center justify-center w-full"
-                    >
-                      <Plus size={20} className="mr-2" /> New Event
-                    </button>
-                    {showNewEventForm && (
-                      <motion.form 
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        onSubmit={handleCreateEvent} 
-                        className="mb-4"
-                      >
-                        <input
-                          type="text"
-                          value={newEvent.title}
-                          onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                          placeholder="Event Title"
-                          className="w-full p-2 mb-2 border rounded text-gray-800"
-                          required
-                        />
-                        <div className="flex mb-2">
-                          <input
-                            type="date"
-                            value={newEvent.date}
-                            onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                            className="w-1/2 p-2 border rounded-l text-gray-800"
-                            required
-                          />
-                          <input
-                            type="time"
-                            value={newEvent.time}
-                            onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
-                            className="w-1/2 p-2 border rounded-r text-gray-800"
-                            required
-                          />
-                        </div>
-                        <input
-                          type="text"
-                          value={newEvent.location}
-                          onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-                          placeholder="Event Location"
-                          className="w-full p-2 mb-2 border rounded text-gray-800"
-                          required
-                        />
-                        <textarea
-                          value={newEvent.description}
-                          onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                          placeholder="Event Description"
-                          className="w-full p-2 mb-2 border rounded text-gray-800"
-                          rows="3"
-                          required
-                        />
-                        <button
-                          type="submit"
-                          className="bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300 w-full"
-                        >
-                          Create Event
-                        </button>
-                      </motion.form>
-                    )}
-                    <ul className="space-y-4">
-                      <AnimatePresence>
-                        {communityEvents.map((event) => (
-                          <motion.li 
-                            key={event.id}
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="bg-blue-700 rounded-lg p-3"
-                          >
-                            <button
-                              onClick={() => handleOpenEvent(event)}
-                              className="text-left hover:underline text-white font-medium"
-                            >
-                              <h4 className="text-lg font-semibold">{event.title}</h4>
-                              <p className="text-sm">Date: {new Date(event.date).toLocaleDateString()} at {event.time}</p>
-                              <p className="text-sm">Location: {event.location}</p>
-                            </button>
-                          </motion.li>
-                        ))}
-                      </AnimatePresence>
-                    </ul>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <div id="topResponders" className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+              <SectionHeader title="Top Responders" />
+              <div className="p-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
+                <ul>
+                  <AnimatePresence>
+                    {topMedics.map((medic, index) => renderUserItem(medic, `medic-${index}`))}
+                  </AnimatePresence>
+                </ul>
+              </div>
+            </div>
           </div>
+      
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Global Discussions */}
+            <div id="discussions" className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+              <SectionHeader title="Global Discussions" />
+              <div className="p-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
+                <button 
+                  onClick={() => setShowNewDiscussionForm(!showNewDiscussionForm)}
+                  className="bg-green-500 text-white px-4 py-2 rounded-full mb-4 hover:bg-green-600 transition duration-300 flex items-center justify-center w-full"
+                >
+                  <Plus size={20} className="mr-2" /> New Discussion
+                </button>
+                {showNewDiscussionForm && (
+                  <motion.form 
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    onSubmit={handleSubmitDiscussion} 
+                    className="mb-4"
+                  >
+                    <input
+                      type="text"
+                      value={newDiscussion.title}
+                      onChange={(e) => setNewDiscussion({...newDiscussion, title: e.target.value})}
+                      placeholder="Discussion Title"
+                      className="w-full p-2 mb-2 border rounded text-gray-800"
+                      required
+                    />
+                    <ReactQuill
+                      ref={quillRef}
+                      value={newDiscussionContent}
+                      onChange={setNewDiscussionContent}
+                      placeholder="Share your thoughts..."
+                      modules={{
+                        toolbar: [
+                          ['bold', 'italic', 'underline'],
+                          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                          ['link'],
+                        ]
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      className="mt-2 bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300 w-full"
+                    >
+                      Post Discussion
+                    </button>
+                  </motion.form>
+                )}
+                <ul className="space-y-2">
+                  <AnimatePresence>
+                    {discussions.map((discussion) => (
+                      <motion.li 
+                        key={discussion.id}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="bg-blue-700 rounded-lg p-3"
+                      >
+                        <button
+                          onClick={() => handleOpenDiscussion(discussion)}
+                          className="text-left hover:underline text-white font-medium"
+                        >
+                          {discussion.title}
+                        </button>
+                        <p className="text-sm text-gray-300 mt-1">
+                          by {discussion.profiles.username} - {new Date(discussion.created_at).toLocaleDateString()}
+                        </p>
+                      </motion.li>
+                    ))}
+                  </AnimatePresence>
+                </ul>
+              </div>
+            </div>
+      
+            {/* Siam Care Events */}
+            <div id="events" className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+              <SectionHeader title="Siam Care Events" />
+              <div className="p-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
+                <button 
+                  onClick={() => setShowNewEventForm(!showNewEventForm)}
+                  className="bg-green-500 text-white px-4 py-2 rounded-full mb-4 hover:bg-green-600 transition duration-300 flex items-center justify-center w-full"
+                >
+                  <Plus size={20} className="mr-2" /> New Event
+                </button>
+                {showNewEventForm && (
+                  <motion.form 
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    onSubmit={handleCreateEvent} 
+                    className="mb-4"
+                  >
+                    <input
+                      type="text"
+                      value={newEvent.title}
+                      onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                      placeholder="Event Title"
+                      className="w-full p-2 mb-2 border rounded text-gray-800"
+                      required
+                    />
+                    <div className="flex mb-2">
+                      <input
+                        type="date"
+                        value={newEvent.date}
+                        onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                        className="w-1/2 p-2 border rounded-l text-gray-800"
+                        required
+                      />
+                      <input
+                        type="time"
+                        value={newEvent.time}
+                        onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
+                        className="w-1/2 p-2 border rounded-r text-gray-800"
+                        required
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      value={newEvent.location}
+                      onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+                      placeholder="Event Location"
+                      className="w-full p-2 mb-2 border rounded text-gray-800"
+                      required
+                    />
+                    <textarea
+                      value={newEvent.description}
+                      onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                      placeholder="Event Description"
+                      className="w-full p-2 mb-2 border rounded text-gray-800"
+                      rows="3"
+                      required
+                    />
+                    <button
+                      type="submit"
+                      className="bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300 w-full"
+                    >
+                      Create Event
+                    </button>
+                  </motion.form>
+                )}
+                <ul className="space-y-4">
+                  <AnimatePresence>
+                    {communityEvents.map((event) => (
+                      <motion.li 
+                        key={event.id}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="bg-blue-700 rounded-lg p-3"
+                      >
+                        <button
+                          onClick={() => handleOpenEvent(event)}
+                          className="text-left hover:underline text-white font-medium"
+                        >
+                          <h4 className="text-lg font-semibold">{event.title}</h4>
+                          <p className="text-sm">Date: {new Date(event.date).toLocaleDateString()} at {event.time}</p>
+                          <p className="text-sm">Location: {event.location}</p>
+                        </button>
+                      </motion.li>
+                    ))}
+                  </AnimatePresence>
+                </ul>
+              </div>
+            </div>
+          </div>
+      
     
      {/* Discussion Popup */}
 <AnimatePresence>
