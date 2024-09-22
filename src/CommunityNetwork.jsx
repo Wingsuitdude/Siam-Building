@@ -1,12 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabase';
-import { Users, Calendar, MapPin, UserPlus, Award, MessageSquare, UserCheck, UserMinus, Mail, X, Trash2, Edit, Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { Users, Calendar, MapPin, UserPlus, Award, MessageSquare, UserCheck, UserMinus, Mail, X, Minimize2, Maximize2, Trash2, Edit, Plus, Send } from 'lucide-react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CommunityNetwork = () => {
   const [nearbyUsers, setNearbyUsers] = useState([]);
+  const [topMedics, setTopMedics] = useState([]);
+  const [discussions, setDiscussions] = useState([]);
+  const [communityEvents, setCommunityEvents] = useState([]);
+  const [connections, setConnections] = useState([]);
+  const [pendingConnections, setPendingConnections] = useState([]);
+  const [pendingOutgoingRequests, setPendingOutgoingRequests] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [selectedProfile, setSelectedProfile] = useState(null);
+  const [selectedDiscussionDetails, setSelectedDiscussionDetails] = useState(null);
+  const [selectedEventDetails, setSelectedEventDetails] = useState(null);
+
   const [editingComment, setEditingComment] = useState(null);
   const [editCommentContent, setEditCommentContent] = useState('');
   const [editingDiscussion, setEditingDiscussion] = useState(null);
@@ -18,46 +29,30 @@ const CommunityNetwork = () => {
   const [editEventTime, setEditEventTime] = useState('');
   const [editEventLocation, setEditEventLocation] = useState('');
   const [editEventDescription, setEditEventDescription] = useState('');
-  const [pendingRequests, setPendingRequests] = useState([]);
-  const [topMedics, setTopMedics] = useState([]);
-  const [pendingOutgoingRequests, setPendingOutgoingRequests] = useState([]);
-  const [discussions, setDiscussions] = useState([]);
+
   const [newDiscussion, setNewDiscussion] = useState({ title: '', content: '' });
-  const [connections, setConnections] = useState([]);
-  const [pendingConnections, setPendingConnections] = useState([]);
-  const [messages, setMessages] = useState({});
-  const [communityEvents, setCommunityEvents] = useState([]);
   const [newEvent, setNewEvent] = useState({ title: '', date: '', time: '', location: '', description: '' });
-  const [eventAttendees, setEventAttendees] = useState({});
-  const [isConnected, setIsConnected] = useState(false);
-  const [comments, setComments] = useState({});
   const [newComment, setNewComment] = useState('');
-  const [currentUser, setCurrentUser] = useState(null);
-  const [eventComments, setEventComments] = useState({});
-  const [selectedProfile, setSelectedProfile] = useState(null);
-  const [activeChats, setActiveChats] = useState([]);
-  const [selectedDiscussionDetails, setSelectedDiscussionDetails] = useState(null);
   const [newDiscussionContent, setNewDiscussionContent] = useState('');
+
+  const [messages, setMessages] = useState({});
+  const [eventAttendees, setEventAttendees] = useState({});
+  const [comments, setComments] = useState({});
+  const [eventComments, setEventComments] = useState({});
+
+  const [activeChats, setActiveChats] = useState([]);
   const [showNewDiscussionForm, setShowNewDiscussionForm] = useState(false);
   const [showNewEventForm, setShowNewEventForm] = useState(false);
-  const [selectedEventDetails, setSelectedEventDetails] = useState(null);
-  const quillRef = useRef(null);
 
   const [activeTab, setActiveTab] = useState('network');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [expandedSections, setExpandedSections] = useState({
-    network: true,
-    nearbyUsers: true,
-    topResponders: true,
-    discussions: true,
-    events: true,
-  });
+
+  const quillRef = useRef(null);
 
   useEffect(() => {
     fetchCurrentUser();
     fetchPendingOutgoingRequests();
     fetchNearbyUsers();
-    fetchPendingRequests();
     fetchTopMedics();
     fetchDiscussions();
     fetchConnections();
@@ -74,32 +69,43 @@ const CommunityNetwork = () => {
     if (user) setCurrentUser(user);
   };
 
+  const handleSubmitComment = async (e, discussionId, type = 'discussion') => {
+    e.preventDefault();
+    if (newComment.trim()) {
+      const { data, error } = await supabase
+        .from('comments')
+        .insert([{ 
+          [`${type}_id`]: discussionId, 
+          user_id: currentUser.id, 
+          content: newComment 
+        }])
+        .select();
+  
+      if (error) {
+        console.error('Error submitting comment:', error);
+        return;
+      }
+  
+      const newCommentWithDetails = {
+        ...data[0],
+        profiles: { username: currentUser.username }
+      };
+  
+      setComments(prev => ({
+        ...prev,
+        [`${type}_${discussionId}`]: [
+          ...(prev[`${type}_${discussionId}`] || []),
+          newCommentWithDetails
+        ]
+      }));
+  
+      setNewComment('');
+    }
+  };
+
   const fetchNearbyUsers = async () => {
     const { data } = await supabase.from('profiles').select('id, username, profile_picture').limit(10);
     setNearbyUsers(data || []);
-  };
-
-  const handleProfileClick = (userId) => {
-    const user = [...nearbyUsers, ...connections, ...topMedics].find(u => u.id === userId);
-    if (user) {
-      setSelectedProfile(user);
-    } else {
-      fetchUserProfile(userId);
-    }
-  };
-
-  const fetchUserProfile = async (userId) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    if (error) {
-      console.error('Error fetching user profile:', error);
-    } else {
-      setSelectedProfile(data);
-    }
   };
 
   const fetchTopMedics = async () => {
@@ -111,6 +117,17 @@ const CommunityNetwork = () => {
       .limit(5);
     setTopMedics(data || []);
   };
+
+  const fetchDiscussions = async () => {
+    const { data } = await supabase
+      .from('discussions')
+      .select(`*, profiles!user_id (username)`)
+      .order('created_at', { ascending: false });
+    setDiscussions(data || []);
+    data?.forEach(discussion => fetchComments(discussion.id));
+  };
+
+  
 
   const fetchConnections = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -133,20 +150,15 @@ const CommunityNetwork = () => {
     }
   };
 
-  const fetchPendingRequests = async () => {
+  const fetchPendingConnections = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('user_connections')
-        .select('connected_user_id')
-        .eq('user_id', user.id)
+        .select(`*, profiles!connected_user_id (username)`)
+        .eq('connected_user_id', user.id)
         .eq('status', 'pending');
-      
-      if (error) {
-        console.error('Error fetching pending requests:', error);
-      } else {
-        setPendingRequests(data.map(req => req.connected_user_id));
-      }
+      setPendingConnections(data || []);
     }
   };
 
@@ -167,16 +179,29 @@ const CommunityNetwork = () => {
     }
   };
 
+  const fetchCommunityEvents = async () => {
+    const { data } = await supabase.from('events').select('*').order('date', { ascending: true });
+    setCommunityEvents(data || []);
+    data?.forEach(event => {
+      fetchEventAttendees(event.id);
+      fetchComments(event.id, 'event');
+    });
+  };
+
+  const fetchComments = async (id, type = 'discussion') => {
+    const { data } = await supabase
+      .from('comments')
+      .select(`*, profiles!user_id (username)`)
+      .eq(`${type}_id`, id)
+      .order('created_at', { ascending: true });
+    setComments(prev => ({ ...prev, [`${type}_${id}`]: data || [] }));
+  };
+
   const fetchEventComments = async (eventId) => {
     try {
       const { data: comments, error: commentsError } = await supabase
         .from('event_comments')
-        .select(`
-          id,
-          content,
-          created_at,
-          user_id
-        `)
+        .select(`id, content, created_at, user_id`)
         .eq('event_id', eventId)
         .order('created_at', { ascending: true });
 
@@ -200,46 +225,6 @@ const CommunityNetwork = () => {
       setEventComments(prev => ({ ...prev, [eventId]: commentsWithUsernames }));
     } catch (error) {
       console.error('Error fetching event comments:', error.message, error.details);
-    }
-  };
-
-
-  const fetchDiscussions = async () => {
-    const { data } = await supabase
-      .from('discussions')
-      .select(`*, profiles!user_id (username)`)
-      .order('created_at', { ascending: false });
-    setDiscussions(data || []);
-    data?.forEach(discussion => fetchComments(discussion.id));
-  };
-
-  const fetchComments = async (id, type = 'discussion') => {
-    const { data } = await supabase
-      .from('comments')
-      .select(`*, profiles!user_id (username)`)
-      .eq(`${type}_id`, id)
-      .order('created_at', { ascending: true });
-    setComments(prev => ({ ...prev, [`${type}_${id}`]: data || [] }));
-  };
-
-  const fetchCommunityEvents = async () => {
-    const { data } = await supabase.from('events').select('*').order('date', { ascending: true });
-    setCommunityEvents(data || []);
-    data?.forEach(event => {
-      fetchEventAttendees(event.id);
-      fetchComments(event.id, 'event');
-    });
-  };
-
-  const fetchPendingConnections = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase
-        .from('user_connections')
-        .select(`*, profiles!connected_user_id (username)`)
-        .eq('connected_user_id', user.id)
-        .eq('status', 'pending');
-      setPendingConnections(data || []);
     }
   };
 
@@ -275,52 +260,130 @@ const CommunityNetwork = () => {
     }
   };
 
-  const toggleSection = (section) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
+
+  const handleCloseChat = (userId) => {
+    setActiveChats(activeChats.filter(chat => chat.id !== userId));
   };
 
-  const renderUserItem = (user, actions, key) => (
-    <motion.li
-      key={key}
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      className="flex items-center text-white mb-2 p-2 bg-blue-700 rounded-lg"
-    >
-      <img
-        src={user.profile_picture || '/default-avatar.png'}
-        alt={user.username}
-        className="w-10 h-10 rounded-full mr-3 object-cover"
-      />
-      <div className="flex-grow">
-        <span
-          className="cursor-pointer hover:underline font-medium"
-          onClick={() => handleProfileClick(user.id)}
-        >
-          {user.username}
-        </span>
-        {user.response_count && (
-          <span className="ml-2 text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
-            {user.response_count} responses
-          </span>
-        )}
-      </div>
-      {actions}
-    </motion.li>
-  );
+  const handleProfileClick = (userId) => {
+    const user = [...nearbyUsers, ...connections, ...topMedics].find(u => u.id === userId);
+    if (user) {
+      setSelectedProfile(user);
+    } else {
+      fetchUserProfile(userId);
+    }
+  };
 
-  const SectionHeader = ({ title, isExpanded, onToggle }) => (
-    <div 
-      className="flex justify-between items-center bg-thai-blue text-white py-2 px-4 rounded-t-lg cursor-pointer"
-      onClick={onToggle}
-    >
-      <h2 className="text-xl font-bold">{title}</h2>
-      {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-    </div>
-  );
+  const handleCloseProfile = () => {
+    setSelectedProfile(null);
+  };
+
+  const handleConnect = async (userId) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from('user_connections').insert([
+        { user_id: user.id, connected_user_id: userId, status: 'pending' }
+      ]);
+      setPendingOutgoingRequests([...pendingOutgoingRequests, userId]);
+    }
+  };
+
+  const handleDisconnect = async (userId) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from('user_connections').delete()
+        .or(`and(user_id.eq.${user.id},connected_user_id.eq.${userId}),and(user_id.eq.${userId},connected_user_id.eq.${user.id})`);
+      setConnections(connections.filter(conn => conn.id !== userId));
+    }
+  };
+
+  const fetchChatHistory = async (chatId) => {
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .or(`sender_id.eq.${currentUser.id},recipient_id.eq.${currentUser.id}`)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      setMessages(prevMessages => ({
+        ...prevMessages,
+        [chatId]: data || []
+      }));
+    } catch (error) {
+      console.error('Error fetching chat history:', error.message);
+    }
+  };
+
+  const handleOpenChat = async (userId, username, profilePicture) => {
+    const existingChat = activeChats.find(chat => chat.id === userId);
+    if (!existingChat) {
+      const newChat = { id: userId, username, profile_picture: profilePicture };
+      setActiveChats(prevChats => [...prevChats, newChat]);
+      await fetchChatHistory(userId);
+    }
+  };
+
+  const sendMessage = async (recipientId, content) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const newMessage = {
+        sender_id: user.id,
+        recipient_id: recipientId,
+        content: content,
+        created_at: new Date().toISOString()
+      };
+
+      // Send message to the database
+      try {
+        const { data, error } = await supabase
+          .from('messages')
+          .insert([newMessage]);
+
+        if (error) throw error;
+
+        // Update local state
+        setMessages(prevMessages => ({
+          ...prevMessages,
+          [recipientId]: [...(prevMessages[recipientId] || []), newMessage]
+        }));
+      } catch (error) {
+        console.error('Error sending message:', error.message);
+      }
+    }
+  };
+
+
+  const handleCancelRequest = async (userId) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from('user_connections').delete()
+        .eq('user_id', user.id)
+        .eq('connected_user_id', userId)
+        .eq('status', 'pending');
+      setPendingOutgoingRequests(pendingOutgoingRequests.filter(id => id !== userId));
+    }
+  };
+
+  const handleOpenDiscussion = (discussion) => {
+    setSelectedDiscussionDetails(discussion);
+    fetchComments(discussion.id, 'discussion');
+  };
+
+  const handleCloseDiscussion = () => {
+    setSelectedDiscussionDetails(null);
+  };
+
+  const handleOpenEvent = async (event) => {
+    setSelectedEventDetails(event);
+    await fetchEventComments(event.id);
+    await fetchEventAttendees(event.id);
+  };
+
+  const handleCloseEvent = () => {
+    setSelectedEventDetails(null);
+  };
 
   const handleSubmitDiscussion = async (e) => {
     e.preventDefault();
@@ -340,17 +403,6 @@ const CommunityNetwork = () => {
       fetchDiscussions();
     }
   };
-
-  const handleSubmitComment = async (e, id, type = 'discussion') => {
-    e.preventDefault();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase.from('comments').insert([{ [`${type}_id`]: id, user_id: user.id, content: newComment }]);
-      setNewComment('');
-      fetchComments(id, type);
-    }
-  };
-
   const handleCreateEvent = async (e) => {
     e.preventDefault();
     try {
@@ -376,469 +428,466 @@ const CommunityNetwork = () => {
       console.log('Event created successfully');
     } catch (error) {
       console.error('Error creating event:', error.message);
+      // You might want to set an error state here to display to the user
+      // setEventError(error.message);
     }
   };
 
-  return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <h1 className="text-3xl font-bold mb-6 text-thai-blue text-center">Community Network</h1>
-      
-      {isMobile && (
-        <div className="mb-4 flex justify-center">
-          <select 
-            value={activeTab} 
-            onChange={(e) => setActiveTab(e.target.value)}
-            className="w-full max-w-xs p-2 border rounded-lg bg-thai-blue text-white"
-          >
-            <option value="network">Your Network</option>
-            <option value="nearby">Nearby Users</option>
-            <option value="topResponders">Top Responders</option>
-            <option value="discussions">Discussions</option>
-            <option value="events">Events</option>
-          </select>
+
+      const renderUserItem = (user, actions, key) => (
+        <motion.li
+          key={key}
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          className="flex items-center text-white mb-2 p-2 bg-blue-700 rounded-lg"
+        >
+          <img
+            src={user.profile_picture || '/default-avatar.png'}
+            alt={user.username}
+            className="w-10 h-10 rounded-full mr-3 object-cover"
+          />
+          <div className="flex-grow">
+            <span
+              className="cursor-pointer hover:underline font-medium"
+              onClick={() => handleProfileClick(user.id)}
+            >
+              {user.username}
+            </span>
+            {user.response_count && (
+              <span className="ml-2 text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
+                {user.response_count} responses
+              </span>
+            )}
+          </div>
+          {actions}
+        </motion.li>
+      );
+    
+      const SectionHeader = ({ title }) => (
+        <div className="bg-thai-blue text-white py-2 px-4 rounded-t-lg">
+          <h2 className="text-xl font-bold">{title}</h2>
         </div>
-      )}
-
-<div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-3'} gap-4`}>
-        {/* Your Network */}
-        <AnimatePresence>
-          {(!isMobile || activeTab === 'network') && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue"
-            >
-              <SectionHeader 
-                title="Your Network" 
-                isExpanded={expandedSections.network}
-                onToggle={() => toggleSection('network')}
-              />
-              {expandedSections.network && (
-                <div className="p-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
-                  <h3 className="text-white font-semibold mb-2">Pending Connections</h3>
-                  <ul className="mb-4">
-                    <AnimatePresence>
-                      {pendingConnections.map((connection, index) => (
-                        <motion.li
-                          key={`pending-${index}`}
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="flex items-center justify-between bg-blue-700 rounded-lg p-2 mb-2"
-                        >
-                          <span className="text-white">{connection.profiles.username}</span>
-                          <button 
-                            onClick={() => handleAcceptConnection(connection.user_id)} 
-                            className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 transition duration-300"
+      );
+    
+      return (
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+          <h1 className="text-3xl font-bold mb-6 text-thai-blue text-center">Community Network</h1>
+          
+          {isMobile && (
+            <div className="mb-4 flex justify-center">
+              <select 
+                value={activeTab} 
+                onChange={(e) => setActiveTab(e.target.value)}
+                className="w-full max-w-xs p-2 border rounded-lg bg-thai-blue text-white"
+              >
+                <option value="network">Your Network</option>
+                <option value="nearby">Nearby Users</option>
+                <option value="topResponders">Top Responders</option>
+                <option value="discussions">Discussions</option>
+                <option value="events">Events</option>
+              </select>
+            </div>
+          )}
+    
+          <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-3'} gap-4`}>
+            {/* Your Network */}
+            <AnimatePresence>
+              {(!isMobile || activeTab === 'network') && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue"
+                >
+                  <SectionHeader title="Your Network" />
+                  <div className="p-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
+                    <h3 className="text-white font-semibold mb-2">Pending Connections</h3>
+                    <ul className="mb-4">
+                      <AnimatePresence>
+                        {pendingConnections.map((connection, index) => (
+                          <motion.li
+                            key={`pending-${index}`}
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="flex items-center justify-between bg-blue-700 rounded-lg p-2 mb-2"
                           >
-                            Accept
-                          </button>
-                        </motion.li>
-                      ))}
-                    </AnimatePresence>
-                  </ul>
-                  <h3 className="text-white font-semibold mb-2">Your Connections</h3>
-                  <ul>
-                    <AnimatePresence>
-                      {connections.map((connection, index) => renderUserItem(connection, null, `connection-${index}`))}
-                    </AnimatePresence>
-                  </ul>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Nearby Users */}
-        <AnimatePresence>
-          {(!isMobile || activeTab === 'nearby') && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue"
-            >
-              <SectionHeader 
-                title="Nearby Users" 
-                isExpanded={expandedSections.nearbyUsers}
-                onToggle={() => toggleSection('nearbyUsers')}
-              />
-              {expandedSections.nearbyUsers && (
-                <div className="p-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
-                  <ul>
-                    <AnimatePresence>
-                      {nearbyUsers.map((user, index) => renderUserItem(user, (
-                        <button 
-                          onClick={() => handleConnect(user.id)} 
-                          className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 transition duration-300"
-                        >
-                          Connect
-                        </button>
-                      ), `nearby-${index}`))}
-                    </AnimatePresence>
-                  </ul>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Top Responders */}
-        <AnimatePresence>
-          {(!isMobile || activeTab === 'topResponders') && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue"
-            >
-              <SectionHeader 
-                title="Top Responders" 
-                isExpanded={expandedSections.topResponders}
-                onToggle={() => toggleSection('topResponders')}
-              />
-              {expandedSections.topResponders && (
-                <div className="p-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
-                  <ul>
-                    <AnimatePresence>
-                      {topMedics.map((medic, index) => renderUserItem(medic, null, `medic-${index}`))}
-                    </AnimatePresence>
-                  </ul>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Global Discussions */}
-        <AnimatePresence>
-          {(!isMobile || activeTab === 'discussions') && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue col-span-full md:col-span-1"
-            >
-              <SectionHeader 
-                title="Global Discussions" 
-                isExpanded={expandedSections.discussions}
-                onToggle={() => toggleSection('discussions')}
-              />
-              {expandedSections.discussions && (
-                <div className="p-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
-                  <button 
-                    onClick={() => setShowNewDiscussionForm(!showNewDiscussionForm)}
-                    className="bg-green-500 text-white px-4 py-2 rounded-full mb-4 hover:bg-green-600 transition duration-300 flex items-center justify-center w-full"
-                  >
-                    <Plus size={20} className="mr-2" /> New Discussion
-                  </button>
-                  {showNewDiscussionForm && (
-                    <motion.form 
-                      initial={{ opacity: 0, y: -20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      onSubmit={handleSubmitDiscussion} 
-                      className="mb-4"
-                    >
-                      <input
-                        type="text"
-                        value={newDiscussion.title}
-                        onChange={(e) => setNewDiscussion({...newDiscussion, title: e.target.value})}
-                        placeholder="Discussion Title"
-                        className="w-full p-2 mb-2 border rounded text-gray-800"
-                        required
-                      />
-                      <ReactQuill
-                        ref={quillRef}
-                        value={newDiscussionContent}
-                        onChange={setNewDiscussionContent}
-                        placeholder="Share your thoughts..."
-                        modules={{
-                          toolbar: [
-                            ['bold', 'italic', 'underline'],
-                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                            ['link'],
-                          ]
-                        }}
-                      />
-                      <button
-                        type="submit"
-                        className="mt-2 bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300 w-full"
-                      >
-                        Post Discussion
-                      </button>
-                    </motion.form>
-                  )}
-                  <ul className="space-y-2">
-                    <AnimatePresence>
-                      {discussions.map((discussion) => (
-                        <motion.li 
-                          key={discussion.id}
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="bg-blue-700 rounded-lg p-3"
-                        >
-                          <button
-                            onClick={() => handleOpenDiscussion(discussion)}
-                            className="text-left hover:underline text-white font-medium"
-                          >
-                            {discussion.title}
-                          </button>
-                          <p className="text-sm text-gray-300 mt-1">
-                            by {discussion.profiles.username} - {new Date(discussion.created_at).toLocaleDateString()}
-                          </p>
-                        </motion.li>
-                      ))}
-                    </AnimatePresence>
-                  </ul>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Siam Care Events */}
-        <AnimatePresence>
-          {(!isMobile || activeTab === 'events') && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue col-span-full md:col-span-1"
-            >
-              <SectionHeader 
-                title="Siam Care Events" 
-                isExpanded={expandedSections.events}
-                onToggle={() => toggleSection('events')}
-              />
-              {expandedSections.events && (
-                <div className="p-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
-                  <button 
-                    onClick={() => setShowNewEventForm(!showNewEventForm)}
-                    className="bg-green-500 text-white px-4 py-2 rounded-full mb-4 hover:bg-green-600 transition duration-300 flex items-center justify-center w-full"
-                  >
-                    <Plus size={20} className="mr-2" /> New Event
-                  </button>
-                  {showNewEventForm && (
-                    <motion.form 
-                      initial={{ opacity: 0, y: -20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      onSubmit={handleCreateEvent} 
-                      className="mb-4"
-                    >
-                      <input
-                        type="text"
-                        value={newEvent.title}
-                        onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                        placeholder="Event Title"
-                        className="w-full p-2 mb-2 border rounded text-gray-800"
-                        required
-                      />
-                      <div className="flex mb-2">
-                        <input
-                          type="date"
-                          value={newEvent.date}
-                          onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                          className="w-1/2 p-2 border rounded-l text-gray-800"
-                          required
-                        />
-                        <input
-                          type="time"
-                          value={newEvent.time}
-                          onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
-                          className="w-1/2 p-2 border rounded-r text-gray-800"
-                          required
-                        />
-                      </div>
-                      <input
-                        type="text"
-                        value={newEvent.location}
-                        onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-                        placeholder="Event Location"
-                        className="w-full p-2 mb-2 border rounded text-gray-800"
-                        required
-                      />
-                      <textarea
-                        value={newEvent.description}
-                        onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                        placeholder="Event Description"
-                        className="w-full p-2 mb-2 border rounded text-gray-800"
-                        rows="3"
-                        required
-                      />
-                      <button
-                        type="submit"
-                        className="bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300 w-full"
-                      >
-                        Create Event
-                      </button>
-                    </motion.form>
-                  )}
-                  <ul className="space-y-4">
-                    <AnimatePresence>
-                      {communityEvents.map((event) => (
-                        <motion.li 
-                          key={event.id}
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="bg-blue-700 rounded-lg p-3"
-                        >
-                          <button
-                            onClick={() => handleOpenEvent(event)}
-                            className="text-left hover:underline text-white font-medium"
-                          >
-                            <h4 className="text-lg font-semibold">{event.title}</h4>
-                            <p className="text-sm">Date: {new Date(event.date).toLocaleDateString()} at {event.time}</p>
-                            <p className="text-sm">Location: {event.location}</p>
-                          </button>
-                        </motion.li>
-                      ))}
-                    </AnimatePresence>
-                  </ul>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-   {/* Discussion Popup */}
-   <AnimatePresence>
-        {selectedDiscussionDetails && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50"
-            onClick={handleCloseDiscussion}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative bg-blue-600 w-full max-w-2xl rounded-lg shadow-xl flex flex-col m-4"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="bg-thai-blue text-white py-4 px-6 rounded-t-lg flex justify-between items-center">
-                <h3 className="text-xl font-bold">{selectedDiscussionDetails.title}</h3>
-                <button onClick={handleCloseDiscussion} className="text-white hover:text-gray-300">
-                  <X size={24} />
-                </button>
-              </div>
-              <div className="flex-grow overflow-y-auto p-6">
-                <p className="text-sm text-gray-300 mb-4">
-                  Posted by: {selectedDiscussionDetails.profiles.username} - {new Date(selectedDiscussionDetails.created_at).toLocaleString()}
-                </p>
-                {editingDiscussion && editingDiscussion.id === selectedDiscussionDetails.id ? (
-                  <form onSubmit={(e) => {
-                    e.preventDefault();
-                    handleEditDiscussion();
-                  }}>
-                    <input
-                      type="text"
-                      value={editDiscussionTitle}
-                      onChange={(e) => setEditDiscussionTitle(e.target.value)}
-                      className="w-full p-2 mb-2 border rounded text-gray-800"
-                      required
-                    />
-                    <ReactQuill
-                      value={editDiscussionContent}
-                      onChange={setEditDiscussionContent}
-                      modules={{
-                        toolbar: [
-                          ['bold', 'italic', 'underline'],
-                          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                          ['link'],
-                        ]
-                      }}
-                    />
-                    <button type="submit" className="mt-2 bg-thai-blue text-white font-bold py-1 px-3 rounded hover:bg-blue-700 transition duration-300">
-                      Save Changes
-                    </button>
-                  </form>
-                ) : (
-                  <div className="text-white" dangerouslySetInnerHTML={{ __html: selectedDiscussionDetails.content }} />
-                )}
-              </div>
-              <div className="bg-blue-700 p-4">
-                <h4 className="text-white font-medium mb-2">Comments</h4>
-                <div className="max-h-48 overflow-y-auto mb-4">
-                  <AnimatePresence>
-                    {comments[`discussion_${selectedDiscussionDetails.id}`]?.map(comment => (
-                      <motion.div
-                        key={comment.id}
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="mb-2 text-white bg-blue-800 rounded p-2"
-                      >
-                        {editingComment && editingComment.id === comment.id ? (
-                          <form onSubmit={(e) => {
-                            e.preventDefault();
-                            handleEditComment(comment, 'discussion');
-                          }}>
-                            <input
-                              type="text"
-                              value={editCommentContent}
-                              onChange={(e) => setEditCommentContent(e.target.value)}
-                              className="w-full p-2 border rounded text-gray-800"
-                              required
-                            />
-                            <button type="submit" className="mt-1 bg-thai-blue text-white font-bold py-1 px-2 rounded hover:bg-blue-700 transition duration-300">
-                              Save
+                            <span className="text-white">{connection.profiles.username}</span>
+                            <button 
+                              onClick={() => handleAcceptConnection(connection.user_id)} 
+                              className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 transition duration-300"
+                            >
+                              Accept
                             </button>
-                          </form>
-                        ) : (
-                          <>
-                            <p>{comment.content}</p>
-                            <p className="text-xs mt-1">By: {comment.profiles.username} - {new Date(comment.created_at).toLocaleString()}</p>
-                            {currentUser && currentUser.id === comment.user_id && (
-                              <div className="mt-1">
-                                <button onClick={() => {
-                                  setEditingComment(comment);
-                                  setEditCommentContent(comment.content);
-                                }} className="text-yellow-500 mr-2">
-                                  <Edit size={14} />
-                                </button>
-                                <button onClick={() => handleDeleteComment(comment.id, selectedDiscussionDetails.id, 'discussion')} className="text-red-500">
-                                  <Trash2 size={14} />
-                                </button>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
-                <form onSubmit={(e) => handleSubmitComment(e, selectedDiscussionDetails.id, 'discussion')}>
-                  <input
-                    type="text"
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Add a comment..."
-                    className="w-full p-2 border rounded text-gray-800"
-                    required
-                  />
-                  <button
-                    type="submit"
-                    className="mt-2 bg-thai-blue text-white font-bold py-1 px-3 rounded hover:bg-blue-700 transition duration-300 w-full"
-                  >
-                    Post Comment
-                  </button>
-                </form>
-              </div>
-            </motion.div>
+                          </motion.li>
+                        ))}
+                      </AnimatePresence>
+                    </ul>
+                    <h3 className="text-white font-semibold mb-2">Your Connections</h3>
+                    <ul>
+                      <AnimatePresence>
+                        {connections.map((connection, index) => renderUserItem(connection, null, `connection-${index}`))}
+                      </AnimatePresence>
+                    </ul>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+    
+      {/* Nearby Users section */}
+      <AnimatePresence>
+        {(!isMobile || activeTab === 'nearby') && (
+          <motion.div className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue">
+            <SectionHeader title="Nearby Users" />
+            <div className="p-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
+              <ul>
+                <AnimatePresence>
+                  {nearbyUsers.map((user, index) => renderUserItem(user, `nearby-${index}`))}
+                </AnimatePresence>
+              </ul>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
+    
+            {/* Top Responders */}
+            <AnimatePresence>
+              {(!isMobile || activeTab === 'topResponders') && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue"
+                >
+                  <SectionHeader title="Top Responders" />
+                  <div className="p-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
+                    <ul>
+                      <AnimatePresence>
+                        {topMedics.map((medic, index) => renderUserItem(medic, null, `medic-${index}`))}
+                      </AnimatePresence>
+                    </ul>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+    
+            {/* Global Discussions */}
+            <AnimatePresence>
+              {(!isMobile || activeTab === 'discussions') && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue col-span-full md:col-span-1"
+                >
+                  <SectionHeader title="Global Discussions" />
+                  <div className="p-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
+                    <button 
+                      onClick={() => setShowNewDiscussionForm(!showNewDiscussionForm)}
+                      className="bg-green-500 text-white px-4 py-2 rounded-full mb-4 hover:bg-green-600 transition duration-300 flex items-center justify-center w-full"
+                    >
+                      <Plus size={20} className="mr-2" /> New Discussion
+                    </button>
+                    {showNewDiscussionForm && (
+                      <motion.form 
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        onSubmit={handleSubmitDiscussion} 
+                        className="mb-4"
+                      >
+                        <input
+                          type="text"
+                          value={newDiscussion.title}
+                          onChange={(e) => setNewDiscussion({...newDiscussion, title: e.target.value})}
+                          placeholder="Discussion Title"
+                          className="w-full p-2 mb-2 border rounded text-gray-800"
+                          required
+                        />
+                        <ReactQuill
+                          ref={quillRef}
+                          value={newDiscussionContent}
+                          onChange={setNewDiscussionContent}
+                          placeholder="Share your thoughts..."
+                          modules={{
+                            toolbar: [
+                              ['bold', 'italic', 'underline'],
+                              [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                              ['link'],
+                            ]
+                          }}
+                        />
+                        <button
+                          type="submit"
+                          className="mt-2 bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300 w-full"
+                        >
+                          Post Discussion
+                        </button>
+                      </motion.form>
+                    )}
+                    <ul className="space-y-2">
+                      <AnimatePresence>
+                        {discussions.map((discussion) => (
+                          <motion.li 
+                            key={discussion.id}
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="bg-blue-700 rounded-lg p-3"
+                          >
+                            <button
+                              onClick={() => handleOpenDiscussion(discussion)}
+                              className="text-left hover:underline text-white font-medium"
+                            >
+                              {discussion.title}
+                            </button>
+                            <p className="text-sm text-gray-300 mt-1">
+                              by {discussion.profiles.username} - {new Date(discussion.created_at).toLocaleDateString()}
+                            </p>
+                          </motion.li>
+                        ))}
+                      </AnimatePresence>
+                    </ul>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+    
+            {/* Siam Care Events */}
+            <AnimatePresence>
+              {(!isMobile || activeTab === 'events') && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="bg-blue-600 shadow-lg rounded-lg overflow-hidden border-4 border-thai-blue col-span-full md:col-span-1"
+                >
+                  <SectionHeader title="Siam Care Events" />
+                  <div className="p-4 overflow-y-auto" style={{ maxHeight: "400px" }}>
+                    <button 
+                      onClick={() => setShowNewEventForm(!showNewEventForm)}
+                      className="bg-green-500 text-white px-4 py-2 rounded-full mb-4 hover:bg-green-600 transition duration-300 flex items-center justify-center w-full"
+                    >
+                      <Plus size={20} className="mr-2" /> New Event
+                    </button>
+                    {showNewEventForm && (
+                      <motion.form 
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        onSubmit={handleCreateEvent} 
+                        className="mb-4"
+                      >
+                        <input
+                          type="text"
+                          value={newEvent.title}
+                          onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                          placeholder="Event Title"
+                          className="w-full p-2 mb-2 border rounded text-gray-800"
+                          required
+                        />
+                        <div className="flex mb-2">
+                          <input
+                            type="date"
+                            value={newEvent.date}
+                            onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                            className="w-1/2 p-2 border rounded-l text-gray-800"
+                            required
+                          />
+                          <input
+                            type="time"
+                            value={newEvent.time}
+                            onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
+                            className="w-1/2 p-2 border rounded-r text-gray-800"
+                            required
+                          />
+                        </div>
+                        <input
+                          type="text"
+                          value={newEvent.location}
+                          onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+                          placeholder="Event Location"
+                          className="w-full p-2 mb-2 border rounded text-gray-800"
+                          required
+                        />
+                        <textarea
+                          value={newEvent.description}
+                          onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                          placeholder="Event Description"
+                          className="w-full p-2 mb-2 border rounded text-gray-800"
+                          rows="3"
+                          required
+                        />
+                        <button
+                          type="submit"
+                          className="bg-thai-blue text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300 w-full"
+                        >
+                          Create Event
+                        </button>
+                      </motion.form>
+                    )}
+                    <ul className="space-y-4">
+                      <AnimatePresence>
+                        {communityEvents.map((event) => (
+                          <motion.li 
+                            key={event.id}
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="bg-blue-700 rounded-lg p-3"
+                          >
+                            <button
+                              onClick={() => handleOpenEvent(event)}
+                              className="text-left hover:underline text-white font-medium"
+                            >
+                              <h4 className="text-lg font-semibold">{event.title}</h4>
+                              <p className="text-sm">Date: {new Date(event.date).toLocaleDateString()} at {event.time}</p>
+                              <p className="text-sm">Location: {event.location}</p>
+                            </button>
+                          </motion.li>
+                        ))}
+                      </AnimatePresence>
+                    </ul>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+    
+     {/* Discussion Popup */}
+<AnimatePresence>
+  {selectedDiscussionDetails && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50"
+      onClick={handleCloseDiscussion}
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="relative bg-blue-600 w-full max-w-4xl rounded-lg shadow-xl flex flex-col m-4 max-h-[90vh]"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="bg-thai-blue text-white py-4 px-6 rounded-t-lg flex justify-between items-center">
+          <h3 className="text-xl font-bold truncate">{selectedDiscussionDetails.title}</h3>
+          <button onClick={handleCloseDiscussion} className="text-white hover:text-gray-300">
+            <X size={24} />
+          </button>
+        </div>
+        <div className="flex-grow overflow-y-auto p-6">
+          <p className="text-sm text-gray-300 mb-4">
+            Posted by: {selectedDiscussionDetails.profiles.username} - {new Date(selectedDiscussionDetails.created_at).toLocaleString()}
+          </p>
+          {editingDiscussion && editingDiscussion.id === selectedDiscussionDetails.id ? (
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              handleEditDiscussion();
+            }}>
+              <input
+                type="text"
+                value={editDiscussionTitle}
+                onChange={(e) => setEditDiscussionTitle(e.target.value)}
+                className="w-full p-2 mb-2 border rounded text-gray-800"
+                required
+              />
+              <ReactQuill
+                value={editDiscussionContent}
+                onChange={setEditDiscussionContent}
+                modules={{
+                  toolbar: [
+                    ['bold', 'italic', 'underline'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link'],
+                  ]
+                }}
+              />
+              <button type="submit" className="mt-2 bg-thai-blue text-white font-bold py-1 px-3 rounded hover:bg-blue-700 transition duration-300">
+                Save Changes
+              </button>
+            </form>
+          ) : (
+            <div className="text-white prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: selectedDiscussionDetails.content }} />
+          )}
+        </div>
+        <div className="bg-blue-700 p-4">
+  <h4 className="text-white font-medium mb-2">Comments</h4>
+  <div className="max-h-48 overflow-y-auto mb-4">
+    <AnimatePresence>
+      {comments[`discussion_${selectedDiscussionDetails.id}`]?.map(comment => (
+        <motion.div
+          key={comment.id || `${comment.content}-${comment.created_at}`}
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          className="mb-2 text-white bg-blue-800 rounded p-2"
+        >
+          {editingComment && editingComment.id === comment.id ? (
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              handleEditComment(comment, 'discussion');
+            }}>
+              <input
+                type="text"
+                value={editCommentContent}
+                onChange={(e) => setEditCommentContent(e.target.value)}
+                className="w-full p-2 border rounded text-gray-800"
+                required
+              />
+              <button type="submit" className="mt-1 bg-thai-blue text-white font-bold py-1 px-2 rounded hover:bg-blue-700 transition duration-300">
+                Save
+              </button>
+            </form>
+          ) : (
+            <>
+              <p>{comment.content}</p>
+              <p className="text-xs mt-1">By: {comment.profiles.username} - {new Date(comment.created_at).toLocaleString()}</p>
+              {currentUser && currentUser.id === comment.user_id && (
+                <div className="mt-1">
+                  <button onClick={() => {
+                    setEditingComment(comment);
+                    setEditCommentContent(comment.content);
+                  }} className="text-yellow-500 mr-2">
+                    <Edit size={14} />
+                  </button>
+                  <button onClick={() => handleDeleteComment(comment.id, selectedDiscussionDetails.id, 'discussion')} className="text-red-500">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </motion.div>
+      ))}
+    </AnimatePresence>
+  </div>
+          <form onSubmit={(e) => handleSubmitComment(e, selectedDiscussionDetails.id, 'discussion')}>
+            <input
+              type="text"
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Add a comment..."
+              className="w-full p-2 border rounded text-gray-800"
+              required
+            />
+            <button
+              type="submit"
+              className="mt-2 bg-thai-blue text-white font-bold py-1 px-3 rounded hover:bg-blue-700 transition duration-300 w-full"
+            >
+              Post Comment
+            </button>
+          </form>
+        </div>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
 
- {/* Event Popup */}
- <AnimatePresence>
+      {/* Event Popup */}
+      <AnimatePresence>
         {selectedEventDetails && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -1059,74 +1108,55 @@ const CommunityNetwork = () => {
               <button onClick={handleCloseProfile} className="float-right text-white hover:text-gray-300">
                 <X size={24} />
               </button>
-              <img 
-                src={selectedProfile.profile_picture || '/default-avatar.png'} 
-                alt={selectedProfile.username} 
-                className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
-              />
-              <h3 className="text-xl font-bold text-white text-center mb-2">{selectedProfile.username}</h3>
-              <p className="text-white text-center mb-2">{selectedProfile.volunteer_type}</p>
-              <p className="text-white text-center mb-4">{selectedProfile.bio}</p>
+              <div className="flex items-center mb-4">
+                <img 
+                  src={selectedProfile.profile_picture || '/default-avatar.png'} 
+                  alt={selectedProfile.username} 
+                  className="w-20 h-20 rounded-full mr-4 object-cover"
+                />
+                <div>
+                  <h3 className="text-xl font-bold text-white">{selectedProfile.username}</h3>
+                  <p className="text-white text-sm">{selectedProfile.volunteer_type || 'Volunteer'}</p>
+                </div>
+              </div>
+              <p className="text-white mb-4 text-sm">{selectedProfile.bio || 'No bio available.'}</p>
               <div className="flex justify-center space-x-4">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => handleOpenChat(selectedProfile.id, selectedProfile.username)}
+                  onClick={() => {
+                    handleOpenChat(selectedProfile.id, selectedProfile.username, selectedProfile.profile_picture);
+                    handleCloseProfile();
+                  }}
                   className="bg-thai-blue text-white px-4 py-2 rounded hover:bg-blue-700 transition duration-300"
                 >
                   Message
                 </motion.button>
-                {isConnected ? (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleDisconnect(selectedProfile.id)}
-                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition duration-300"
-                  >
-                    Disconnect
-                  </motion.button>
-                ) : pendingOutgoingRequests.includes(selectedProfile.id) ? (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleCancelRequest(selectedProfile.id)}
-                    className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition duration-300"
-                  >
-                    Cancel Request
-                  </motion.button>
-                ) : (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleConnect(selectedProfile.id)}
-                    className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition duration-300"
-                  >
-                    Connect
-                  </motion.button>
-                )}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleConnect(selectedProfile.id)}
+                  className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition duration-300"
+                >
+                  Connect
+                </motion.button>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Chat Tabs */}
-      <div className="fixed bottom-0 right-0 flex flex-row-reverse items-end space-x-reverse space-x-2 p-4">
+       {/* Chat Popups */}
+       <div className="fixed bottom-0 right-0 flex flex-row-reverse items-end space-x-reverse space-x-2 p-4">
         <AnimatePresence>
           {activeChats.map(chat => (
-            <motion.div
-              key={chat.userId}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-            >
-              <ChatTab
-                chat={chat}
-                onClose={handleCloseChat}
-                messages={messages[chat.userId] || []}
-                sendMessage={sendMessage}
-              />
-            </motion.div>
+            <ChatPopup
+              key={chat.id}
+              chat={chat}
+              onClose={handleCloseChat}
+              messages={messages[chat.id] || []}
+              sendMessage={sendMessage}
+            />
           ))}
         </AnimatePresence>
       </div>
@@ -1134,19 +1164,26 @@ const CommunityNetwork = () => {
   );
 };
 
-const ChatTab = ({ chat, onClose, messages, sendMessage }) => {
+const ChatPopup = ({ chat, onClose, messages, sendMessage, currentUser }) => {
   const [newMessage, setNewMessage] = useState('');
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
   const messagesEndRef = useRef(null);
+  const audioRef = useRef(new Audio('/path/to/notification-sound.mp3')); // Replace with actual sound file path
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(scrollToBottom, [messages]);
+  useEffect(() => {
+    if (!isMinimized) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      setHasUnreadMessages(false);
+    } else if (messages.length > 0 && messages[messages.length - 1].sender_id !== currentUser?.id) {
+      setHasUnreadMessages(true);
+      audioRef.current.play().catch(e => console.log("Audio play failed:", e));
+    }
+  }, [messages, isMinimized, currentUser]);
 
   const handleSend = () => {
     if (newMessage.trim()) {
-      sendMessage(chat.userId, newMessage);
+      sendMessage(chat.id, newMessage);
       setNewMessage('');
     }
   };
@@ -1158,59 +1195,98 @@ const ChatTab = ({ chat, onClose, messages, sendMessage }) => {
     }
   };
 
+  const toggleMinimize = () => {
+    setIsMinimized(!isMinimized);
+    if (isMinimized) {
+      setHasUnreadMessages(false);
+    }
+  };
+
   return (
     <motion.div
       initial={{ y: 20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: 20, opacity: 0 }}
-      className="bg-blue-600 rounded-t-lg shadow-lg w-72 flex flex-col"
+      className={`bg-thai-dark-blue rounded-t-lg shadow-lg w-80 ${isMinimized ? 'h-12 cursor-pointer' : 'h-96'}`}
+      style={{ position: 'fixed', bottom: 0, right: 20 }}
+      onClick={isMinimized ? toggleMinimize : undefined}
+      whileHover={isMinimized ? { scale: 1.05 } : undefined}
+      whileTap={isMinimized ? { scale: 0.95 } : undefined}
     >
       <div className="bg-thai-blue text-white p-2 flex justify-between items-center rounded-t-lg">
         <div className="flex items-center">
           <img 
             src={chat.profile_picture || '/default-avatar.png'} 
             alt={chat.username} 
-            className="w-6 h-6 rounded-full mr-2 object-cover"
+            className="w-8 h-8 rounded-full mr-2 object-cover"
           />
           <span className="font-medium">{chat.username}</span>
         </div>
-        <button onClick={() => onClose(chat.userId)} className="text-white hover:text-gray-300">
-          <X size={16} />
-        </button>
+        <div className="flex items-center">
+          <button onClick={(e) => { e.stopPropagation(); toggleMinimize(); }} className="text-white hover:text-gray-300 mr-2">
+            {isMinimized ? <Maximize2 size={20} /> : <Minimize2 size={20} />}
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); onClose(chat.id); }} className="text-white hover:text-gray-300">
+            <X size={20} />
+          </button>
+        </div>
       </div>
-      <div className="flex-grow overflow-y-auto p-2" style={{ maxHeight: "250px" }}>
-        {messages.filter(m => m.sender_id === chat.userId || m.recipient_id === chat.userId).map((message, index) => (
+      <AnimatePresence>
+        {!isMinimized && (
           <motion.div
-            key={index}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`mb-2 ${message.sender_id === chat.userId ? 'text-left' : 'text-right'}`}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'calc(100% - 48px)' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="flex flex-col h-full"
           >
-            <span className={`inline-block p-2 rounded-lg ${message.sender_id === chat.userId ? 'bg-gray-200' : 'bg-blue-200'}`}>
-              {message.content}
-            </span>
+            <div className="flex-grow overflow-y-auto p-3 bg-thai-light-blue" style={{ height: 'calc(100% - 56px)' }}>
+              {messages.map((message, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`mb-3 ${currentUser && message.sender_id === currentUser.id ? 'text-right' : 'text-left'}`}
+                >
+                  <div className={`inline-block max-w-[70%] ${currentUser && message.sender_id === currentUser.id ? 'bg-thai-orange text-white' : 'bg-white text-thai-dark-blue'} p-2 rounded-lg shadow`}>
+                    <p className="text-sm">{message.content}</p>
+                    <p className="text-xs mt-1 opacity-70">
+                      {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+            <div className="p-2 bg-thai-dark-blue">
+              <div className="flex rounded-lg border border-thai-blue overflow-hidden">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  className="flex-grow p-2 focus:outline-none bg-white text-thai-dark-blue"
+                  placeholder="Type a message..."
+                />
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleSend} 
+                  className="bg-thai-orange text-white p-2"
+                >
+                  <Send size={20} />
+                </motion.button>
+              </div>
+            </div>
           </motion.div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
-      <div className="p-2 flex">
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyPress={handleKeyPress}
-          className="flex-grow border rounded-l-lg p-1 text-gray-800"
-          placeholder="Type a message..."
+        )}
+      </AnimatePresence>
+      {isMinimized && hasUnreadMessages && (
+        <motion.div
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ repeat: Infinity, duration: 1.5 }}
+          className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full"
         />
-        <motion.button 
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={handleSend} 
-          className="bg-thai-blue text-white p-1 rounded-r-lg"
-        >
-          Send
-        </motion.button>
-      </div>
+      )}
     </motion.div>
   );
 };

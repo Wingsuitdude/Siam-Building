@@ -6,8 +6,10 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'thai-blue': '#00205B',
-        'thai-red': '#EF3340',
+        'thai-blue': '#1e3a8a',
+        'thai-dark-blue': '#0f172a',
+        'thai-light-blue': '#3b82f6',
+        'thai-orange': '#f97316',
       },
     },
   },
